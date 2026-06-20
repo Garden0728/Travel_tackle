@@ -14,6 +14,6 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("Travel_tackle_Swagger")
                         .description("트레블참견 API 문서")
-                        .version("1.0.0"));
+                        .version("1.0.0")); //.
     }
 }
