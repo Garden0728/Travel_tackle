@@ -22,6 +22,12 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
     @Column(nullable = false)
     private String name;
 
@@ -41,6 +47,17 @@ public class User {
         this.email = email;
         this.name = name;
         this.nationality = nationality;
+    }
+
+    public static User localUser(String email, String passwordHash, String name, String nationality) {
+        User user = new User(email, name, nationality);
+        user.passwordHash = passwordHash;
+        user.emailVerifiedAt = LocalDateTime.now();
+        return user;
+    }
+
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public void useFreeTrial() {
