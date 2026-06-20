@@ -28,7 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-**Stack**: Spring Boot 4.1.0 · Java 21 · Spring Data JPA · H2 (in-memory) · Lombok · QueryDSL 5.0.0 (Jakarta)
+**Stack**: Spring Boot 4.1.0 · Java 21 · Spring Data JPA · H2 (in-memory) · Lombok · QueryDSL 6.0 (OpenFeign, Jakarta)
 
 **Root package**: `Timeout.travel_tackle` (note: PascalCase — intentional group convention)
 
@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Q-classes are generated into `src/main/generated/` (tracked in `sourceSets`, **not** inside `build/`). This directory is included as a source root and is wiped by `clean`. The annotation processors used are:
 
-- `com.querydsl:querydsl-apt:5.0.0:jakarta`
+- `io.github.openfeign.querydsl:querydsl-apt:6.0`
 - `jakarta.annotation:jakarta.annotation-api`
 - `jakarta.persistence:jakarta.persistence-api`
 

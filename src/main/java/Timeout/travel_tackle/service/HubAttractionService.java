@@ -19,7 +19,7 @@ public class HubAttractionService {
     private static final String DEFAULT_AREA_CD = "11"; //서울
     private static final String DEFAULT_SIGNGU_CD = "11110"; //종로구
 
-    @Value("${tour.service-key}")
+    @Value("${tour.service-key:}")
     private String serviceKey;
 
     private final RestClient restClient =
