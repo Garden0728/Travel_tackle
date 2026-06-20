@@ -1,6 +1,6 @@
 package Timeout.travel_tackle.entity;
 
-import Timeout.travel_tackle.entity.Enum.CreditTransactionReason;
+import Timeout.travel_tackle.entity.Enum.AuthProvider;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,10 +11,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "credit_transactions")
+@Table(
+        name = "user_auth_providers",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"provider", "provider_user_id"}),
+                @UniqueConstraint(columnNames = {"user_id", "provider"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CreditTransaction { //크레딧 사용내역 혹은 충전 내역 관리
+public class UserAuthProvider {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -24,18 +30,20 @@ public class CreditTransaction { //크레딧 사용내역 혹은 충전 내역 �
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private int amount;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CreditTransactionReason reason;
+    private AuthProvider provider;
+
+    @Column(name = "provider_user_id", nullable = false)
+    private String providerUserId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public CreditTransaction(User user, int amount, CreditTransactionReason reason) {
+    public UserAuthProvider(User user, AuthProvider provider, String providerUserId) {
         this.user = user;
-        this.amount = amount;
-        this.reason = reason;
+        this.provider = provider;
+        this.providerUserId = providerUserId;
     }
 }

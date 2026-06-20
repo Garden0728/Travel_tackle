@@ -11,6 +11,8 @@
 |---|---|---|---|
 | id | id | UUID (PK) | 고유 식별자 |
 | email | email | String | 이메일 |
+| passwordHash | password_hash | String | 일반 로그인 비밀번호 해시 |
+| emailVerifiedAt | email_verified_at | LocalDateTime | 이메일 인증 완료 일시 |
 | name | name | String | 이름 |
 | nationality | nationality | String | 국적 |
 | creditBalance | credit_balance | int | 보유 크레딧 |
@@ -23,6 +25,39 @@
 - `CreditTransaction` 1:N (has)
 - `Trip` 1:N (creates)
 - `SavedTrip` 1:N
+- `UserAuthProvider` 1:N
+
+---
+
+## UserAuthProvider
+**테이블**: `user_auth_providers`  
+**설명**: 사용자에게 연결된 일반·소셜 로그인 계정
+
+| 필드 (Java) | 컬럼 (DB) | 타입 | 설명 |
+|---|---|---|---|
+| id | id | UUID (PK) | 고유 식별자 |
+| user | user_id | UUID (FK) | 연결된 사용자 |
+| provider | provider | AuthProvider | LOCAL, KAKAO, GOOGLE, APPLE |
+| providerUserId | provider_user_id | String | 인증 제공자의 고유 사용자 ID |
+| createdAt | created_at | LocalDateTime | 계정 연결 일시 |
+
+> `(provider, provider_user_id)`와 `(user_id, provider)` 조합은 각각 유일합니다.
+
+---
+
+## EmailVerification
+**테이블**: `email_verifications`  
+**설명**: 일반 회원가입을 위한 이메일 인증 요청
+
+| 필드 (Java) | 컬럼 (DB) | 타입 | 설명 |
+|---|---|---|---|
+| id | id | UUID (PK) | 고유 식별자 |
+| email | email | String | 인증 대상 이메일 |
+| codeHash | code_hash | String | 원문을 저장하지 않은 인증 코드 해시 |
+| expiresAt | expires_at | LocalDateTime | 인증 만료 일시 |
+| verifiedAt | verified_at | LocalDateTime | 인증 완료 일시 |
+| usedAt | used_at | LocalDateTime | 회원가입에 사용된 일시 |
+| createdAt | created_at | LocalDateTime | 인증 요청 일시 |
 
 ---
 
@@ -37,9 +72,9 @@
 | travelStyle | travel_style | String | 여행 스타일 |
 | budgetLevel | budget_level | String | 예산 수준 |
 | preferredRegion | preferred_region | String | 선호 지역 |
-| interestTags | interest_tags | String (jsonb) | 관심 태그 목록 |
+| interestTags | 별도 테이블 | Set<InterestTag> | 관심 태그 목록 |
 
-> `interest_tags`는 원래 jsonb 타입. H2 환경에서는 String으로 매핑, 운영(PostgreSQL) 전환 시 조정 필요.
+> 관심 태그는 `user_preference_interest_tags` 테이블에 enum 문자열로 저장됩니다.
 
 ---
 
