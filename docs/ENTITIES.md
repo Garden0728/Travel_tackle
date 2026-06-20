@@ -37,9 +37,9 @@
 | travelStyle | travel_style | String | 여행 스타일 |
 | budgetLevel | budget_level | String | 예산 수준 |
 | preferredRegion | preferred_region | String | 선호 지역 |
-| interestTags | interest_tags | String (jsonb) | 관심 태그 목록 |
+| interestTags | 별도 테이블 | Set<InterestTag> | 관심 태그 목록 |
 
-> `interest_tags`는 원래 jsonb 타입. H2 환경에서는 String으로 매핑, 운영(PostgreSQL) 전환 시 조정 필요.
+> 관심 태그는 `user_preference_interest_tags` 테이블에 enum 문자열로 저장됩니다.
 
 ---
 
