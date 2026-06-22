@@ -45,6 +45,8 @@ dependencies {
 	annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:6.0'
 	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
 	annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'	//Swagger
 }
 
 tasks.named('test') {

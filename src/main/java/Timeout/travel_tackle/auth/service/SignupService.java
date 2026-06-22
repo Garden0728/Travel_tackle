@@ -25,10 +25,11 @@ public class SignupService {
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncoder passwordEncoder;
+    private final EmailNormalizer emailNormalizer;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        String email = EmailVerificationService.normalizeEmail(request.email());
+        String email = emailNormalizer.normalize(request.email());
         if (userRepository.existsByEmail(email)) {
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
