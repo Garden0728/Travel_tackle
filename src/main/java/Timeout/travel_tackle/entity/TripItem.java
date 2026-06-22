@@ -69,6 +69,12 @@ public class TripItem {
         this.orderIndex = orderIndex;
     }
 
+    public void moveTo(TripDay newTripDay, int newOrderIndex) {
+        validateOrderIndex(newOrderIndex);
+        this.tripDay = newTripDay;
+        this.orderIndex = newOrderIndex;
+    }
+
     private static void validateTime(LocalTime startTime, LocalTime endTime) {
         if (startTime != null && endTime != null && endTime.isBefore(startTime)) {
             throw new CustomException(ErrorCode.INVALID_TRIP_ITEM_TIME_RANGE);
