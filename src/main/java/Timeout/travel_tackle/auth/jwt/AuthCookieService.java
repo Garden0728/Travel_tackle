@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -21,6 +22,7 @@ public class AuthCookieService implements BearerTokenResolver {
     public static final String ACCESS_TOKEN_COOKIE = "access_token";
     public static final String REFRESH_TOKEN_COOKIE = "refresh_token";
     private final JwtProperties properties;
+    private final DefaultBearerTokenResolver headerTokenResolver = new DefaultBearerTokenResolver();
 
     public void writeTokens(HttpServletResponse response, AuthTokens tokens) {
         addCookie(response, ACCESS_TOKEN_COOKIE,
@@ -31,7 +33,8 @@ public class AuthCookieService implements BearerTokenResolver {
 
     @Override
     public String resolve(HttpServletRequest request) {
-        return readCookie(request, ACCESS_TOKEN_COOKIE);
+        String cookieToken = readCookie(request, ACCESS_TOKEN_COOKIE);
+        return cookieToken != null ? cookieToken : headerTokenResolver.resolve(request);
     }
 
     public String readRefreshToken(HttpServletRequest request) { //refresh 토큰 검증
