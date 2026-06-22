@@ -1,13 +1,12 @@
 package Timeout.travel_tackle.trip.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalTime;
+import java.util.UUID;
 
 public record AddTripItemRequest(
-        @NotBlank String tourApiContentId,
-        @NotBlank String cachedTitle,
-        String cachedImageUrl,
+        @NotNull UUID cartItemId,
         LocalTime startTime,
         LocalTime endTime
 ) {}

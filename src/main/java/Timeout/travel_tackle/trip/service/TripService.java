@@ -1,6 +1,8 @@
 package Timeout.travel_tackle.trip.service;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
+import Timeout.travel_tackle.cart.CartItemRepository;
+import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
 import Timeout.travel_tackle.entity.TripItem;
@@ -35,6 +37,7 @@ public class TripService {
     private final TripItemRepository tripItemRepository;
     private final TripQueryRepository tripQueryRepository;
     private final UserRepository userRepository;
+    private final CartItemRepository cartItemRepository;
 
     @Transactional
     public TripSummaryResponse createTrip(UUID userId, CreateTripRequest request) {
@@ -85,10 +88,12 @@ public class TripService {
     public TripItemResponse addTripItem(UUID userId, UUID tripId, UUID dayId, AddTripItemRequest request) {
         Trip trip = findTripOwnedBy(userId, tripId);
         TripDay day = findDayInTrip(dayId, trip);
+        CartItem cartItem = cartItemRepository.findByIdAndUserId(request.cartItemId(), userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CART_ITEM_NOT_FOUND));
         List<TripItem> existing = tripItemRepository.findAllByTripDayOrderByOrderIndex(day);
         int nextIndex = existing.isEmpty() ? 0 : existing.get(existing.size() - 1).getOrderIndex() + 1;
-        TripItem item = new TripItem(day, request.tourApiContentId(), request.cachedTitle(),
-                request.cachedImageUrl(), request.startTime(), request.endTime(), nextIndex);
+        TripItem item = new TripItem(day, cartItem.getTourApiContentId(), cartItem.getCachedTitle(),
+                cartItem.getCachedImageUrl(), request.startTime(), request.endTime(), nextIndex);
         tripItemRepository.save(item);
         return TripItemResponse.from(item);
     }

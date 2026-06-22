@@ -1,6 +1,8 @@
 package Timeout.travel_tackle.trip;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
+import Timeout.travel_tackle.cart.CartItemRepository;
+import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
@@ -31,12 +33,43 @@ class TripServiceTests {
 
     @Autowired TripService tripService;
     @Autowired UserRepository userRepository;
+    @Autowired CartItemRepository cartItemRepository;
 
     private UUID userId;
+    private User user;
 
     @BeforeEach
     void setUp() {
-        userId = userRepository.save(new User("trip-test@example.com", "여행자", "KR")).getId();
+        user = userRepository.save(new User("trip-test@example.com", "여행자", "KR"));
+        userId = user.getId();
+    }
+
+    @Test
+    void addsOwnedCartItemToTripUsingSavedSnapshot() {
+        TripDetailResponse trip = createTripWithDays(1);
+        TripDayResponse day = trip.days().getFirst();
+        CartItem cartItem = saveCartItem(user, "125266", "경복궁", "image.jpg");
+
+        TripItemResponse result = tripService.addTripItem(userId, trip.id(), day.id(),
+                new AddTripItemRequest(cartItem.getId(), null, null));
+
+        assertEquals("125266", result.tourApiContentId());
+        assertEquals("경복궁", result.cachedTitle());
+        assertEquals("image.jpg", result.cachedImageUrl());
+    }
+
+    @Test
+    void rejectsAnotherUsersCartItem() {
+        TripDetailResponse trip = createTripWithDays(1);
+        TripDayResponse day = trip.days().getFirst();
+        User anotherUser = userRepository.save(new User("other@example.com", "다른 사용자", "KR"));
+        CartItem cartItem = saveCartItem(anotherUser, "999", "다른 장바구니", null);
+
+        CustomException exception = assertThrows(CustomException.class, () ->
+                tripService.addTripItem(userId, trip.id(), day.id(),
+                        new AddTripItemRequest(cartItem.getId(), null, null)));
+
+        assertEquals(ErrorCode.CART_ITEM_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -80,8 +113,13 @@ class TripServiceTests {
     }
 
     private TripItemResponse addItem(UUID tripId, UUID dayId, String contentId) {
+        CartItem cartItem = saveCartItem(user, contentId, contentId, null);
         return tripService.addTripItem(userId, tripId, dayId,
-                new AddTripItemRequest(contentId, contentId, null, null, null));
+                new AddTripItemRequest(cartItem.getId(), null, null));
+    }
+
+    private CartItem saveCartItem(User owner, String contentId, String title, String imageUrl) {
+        return cartItemRepository.save(new CartItem(owner, contentId, title, imageUrl, "1"));
     }
 
     private void assertItems(List<TripItemResponse> items, List<String> expectedIds) {
