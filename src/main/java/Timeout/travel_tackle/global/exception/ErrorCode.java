@@ -12,6 +12,10 @@ public enum ErrorCode {
     INVALID_DAY_NUMBER(HttpStatus.BAD_REQUEST, "TRIP_002", "여행 일차는 1 이상이어야 합니다."),
     INVALID_TRIP_ITEM_TIME_RANGE(HttpStatus.BAD_REQUEST, "TRIP_003", "일정 종료 시간은 시작 시간보다 빠를 수 없습니다."),
     INVALID_ORDER_INDEX(HttpStatus.BAD_REQUEST, "TRIP_004", "일정 순서는 0 이상이어야 합니다."),
+    TRIP_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_005", "여행 계획을 찾을 수 없습니다."),
+    TRIP_ACCESS_DENIED(HttpStatus.FORBIDDEN, "TRIP_006", "해당 여행 계획에 접근 권한이 없습니다."),
+    TRIP_DAY_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_007", "여행 일차를 찾을 수 없습니다."),
+    TRIP_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_008", "여행 일정 항목을 찾을 수 없습니다."),
 
     //Auth에 관련 예외
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH_001", "이미 가입된 이메일입니다."),
