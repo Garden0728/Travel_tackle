@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -124,10 +125,10 @@ public class TripService {
         List<TripItem> existing = tripItemRepository.findAllByTripDayOrderByOrderIndex(day);
 
         Set<UUID> dayItemIds = existing.stream().map(TripItem::getId).collect(Collectors.toSet());
-        for (UUID id : request.itemIds()) {
-            if (!dayItemIds.contains(id)) {
-                throw new CustomException(ErrorCode.TRIP_ITEM_NOT_FOUND);
-            }
+        Set<UUID> requestedItemIds = new HashSet<>(request.itemIds());
+        if (requestedItemIds.size() != request.itemIds().size()
+                || !requestedItemIds.equals(dayItemIds)) {
+            throw new CustomException(ErrorCode.INVALID_TRIP_ITEM_ORDER);
         }
 
         Map<UUID, TripItem> itemMap = existing.stream()
@@ -135,11 +136,7 @@ public class TripService {
 
         int size = request.itemIds().size();
 
-        // 1단계: 임시 큰 값으로 올려서 충돌 방지
-        for (int i = 0; i < size; i++) {
-            itemMap.get(request.itemIds().get(i)).changeOrder(size + i);
-        }
-        tripItemRepository.saveAll(existing);
+        moveToTemporaryOrders(existing);
         tripItemRepository.flush();
 
         // 2단계: 최종 순서 적용
@@ -169,15 +166,33 @@ public class TripService {
         }
 
         TripDay newDay = findDayInTrip(request.newDayId(), trip);
-        int newIndex;
-        if (request.newOrderIndex() != null) {
-            newIndex = request.newOrderIndex();
-        } else {
-            List<TripItem> targetItems = tripItemRepository.findAllByTripDayOrderByOrderIndex(newDay);
-            newIndex = targetItems.isEmpty() ? 0 : targetItems.get(targetItems.size() - 1).getOrderIndex() + 1;
+        TripDay currentDay = item.getTripDay();
+        List<TripItem> sourceItems = new ArrayList<>(
+                tripItemRepository.findAllByTripDayOrderByOrderIndex(currentDay));
+
+        if (currentDay.getId().equals(newDay.getId())) {
+            moveWithinSameDay(item, sourceItems, request.newOrderIndex());
+            return TripItemResponse.from(item);
         }
 
+        List<TripItem> targetItems = new ArrayList<>(
+                tripItemRepository.findAllByTripDayOrderByOrderIndex(newDay));
+        sourceItems.remove(item);
+        int newIndex = resolveInsertionIndex(request.newOrderIndex(), targetItems.size());
+
+        List<TripItem> affectedItems = new ArrayList<>(sourceItems.size() + targetItems.size() + 1);
+        affectedItems.addAll(sourceItems);
+        affectedItems.add(item);
+        affectedItems.addAll(targetItems);
+        moveToTemporaryOrdersForEachDay(affectedItems);
+        tripItemRepository.flush();
+
+        targetItems.add(newIndex, item);
+        applyOrder(sourceItems);
+        applyOrder(targetItems);
         item.moveTo(newDay, newIndex);
+        tripItemRepository.saveAll(affectedItems);
+
         return TripItemResponse.from(item);
     }
 
@@ -196,6 +211,54 @@ public class TripService {
 
     private void deleteAllDaysAndItems(Trip trip) {
         tripQueryRepository.bulkDeleteByTrip(trip);
+    }
+
+    private void moveWithinSameDay(TripItem item, List<TripItem> items, Integer requestedIndex) {
+        items.remove(item);
+        int newIndex = resolveInsertionIndex(requestedIndex, items.size());
+
+        List<TripItem> affectedItems = new ArrayList<>(items);
+        affectedItems.add(item);
+        moveToTemporaryOrders(affectedItems);
+        tripItemRepository.flush();
+
+        items.add(newIndex, item);
+        applyOrder(items);
+        tripItemRepository.saveAll(items);
+    }
+
+    private int resolveInsertionIndex(Integer requestedIndex, int maxIndex) {
+        if (requestedIndex == null) {
+            return maxIndex;
+        }
+        if (requestedIndex < 0 || requestedIndex > maxIndex) {
+            throw new CustomException(ErrorCode.INVALID_TRIP_ITEM_ORDER);
+        }
+        return requestedIndex;
+    }
+
+    private void moveToTemporaryOrdersForEachDay(List<TripItem> items) {
+        items.stream()
+                .collect(Collectors.groupingBy(item -> item.getTripDay().getId()))
+                .values()
+                .forEach(this::moveToTemporaryOrders);
+    }
+
+    private void moveToTemporaryOrders(List<TripItem> items) {
+        int temporaryStart = items.stream()
+                .mapToInt(TripItem::getOrderIndex)
+                .max()
+                .orElse(-1) + 1;
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).changeOrder(temporaryStart + i);
+        }
+        tripItemRepository.saveAll(items);
+    }
+
+    private void applyOrder(List<TripItem> items) {
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).changeOrder(i);
+        }
     }
 
     private User findUser(UUID userId) {
