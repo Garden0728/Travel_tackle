@@ -22,6 +22,15 @@ public enum ErrorCode {
     EMAIL_VERIFICATION_ALREADY_USED(HttpStatus.BAD_REQUEST, "AUTH_006", "이미 사용된 이메일 인증입니다."),
     EMAIL_VERIFICATION_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_007", "이메일 인증 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     EMAIL_DELIVERY_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_008", "인증 이메일을 발송하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+    SOCIAL_EMAIL_REQUIRED(HttpStatus.BAD_REQUEST, "AUTH_009", "소셜 계정에서 이메일 정보를 제공받지 못했습니다."),
+    SOCIAL_ACCOUNT_LINK_REQUIRED(HttpStatus.CONFLICT, "AUTH_010", "동일한 이메일 계정이 존재합니다. 로그인 후 소셜 계정을 연결해 주세요."),
+    UNSUPPORTED_AUTH_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH_011", "지원하지 않는 소셜 로그인 제공자입니다."),
+    SOCIAL_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_012", "소셜 로그인에 실패했습니다."),
+    UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "AUTH_013", "로그인이 필요합니다."),
+    INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH_014", "이메일 또는 비밀번호가 올바르지 않습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_015", "유효하지 않은 리프레시 토큰입니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_016", "만료된 리프레시 토큰입니다."),
+    SOCIAL_EMAIL_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "AUTH_017", "인증되지 않은 소셜 이메일입니다."),
 
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_002", "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");

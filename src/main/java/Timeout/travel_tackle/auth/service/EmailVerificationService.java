@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -27,13 +26,14 @@ public class EmailVerificationService {
     private final VerificationMailSender verificationMailSender;
     private final VerificationCodeGenerator verificationCodeGenerator;
     private final PasswordEncoder passwordEncoder;
+    private final EmailNormalizer emailNormalizer;
 
     @Value("${app.auth.email-verification-expiration-minutes:10}")
     private long expirationMinutes;
 
     @Transactional
     public void requestCode(String rawEmail) {
-        String email = normalizeEmail(rawEmail);
+        String email = emailNormalizer.normalize(rawEmail);
         if (userRepository.existsByEmail(email)) {
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -53,7 +53,7 @@ public class EmailVerificationService {
 
     @Transactional
     public void confirmCode(String rawEmail, String code) {
-        String email = normalizeEmail(rawEmail);
+        String email = emailNormalizer.normalize(rawEmail);
         EmailVerification verification = findLatest(email);
         LocalDateTime now = LocalDateTime.now();
 
@@ -67,16 +67,12 @@ public class EmailVerificationService {
     }
 
     EmailVerification getVerifiedAndUsable(String email, LocalDateTime now) {
-        EmailVerification verification = findLatest(normalizeEmail(email));
+        EmailVerification verification = findLatest(emailNormalizer.normalize(email));
         validateNotUsedOrExpired(verification, now);
         if (!verification.isVerified()) {
             throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
         return verification;
-    }
-
-    static String normalizeEmail(String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private EmailVerification findLatest(String email) {

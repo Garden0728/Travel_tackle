@@ -19,7 +19,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String email;
 
     @Column(name = "password_hash")
@@ -53,6 +53,14 @@ public class User {
         User user = new User(email, name, nationality);
         user.passwordHash = passwordHash;
         user.emailVerifiedAt = LocalDateTime.now();
+        return user;
+    }
+
+    public static User socialUser(String email, String name) {
+        User user = new User(email, name, null);
+        if (email != null) {
+            user.emailVerifiedAt = LocalDateTime.now();
+        }
         return user;
     }
 
