@@ -1,11 +1,12 @@
-package Timeout.travel_tackle.tour;
+package Timeout.travel_tackle.tour.controller;
 
-import Timeout.travel_tackle.tour.TourDtos.Area;
-import Timeout.travel_tackle.tour.TourDtos.Category;
-import Timeout.travel_tackle.tour.TourDtos.ContentDetail;
-import Timeout.travel_tackle.tour.TourDtos.ContentSummary;
-import Timeout.travel_tackle.tour.TourDtos.Festival;
-import Timeout.travel_tackle.tour.TourDtos.Page;
+import Timeout.travel_tackle.tour.dto.TourDtos.Area;
+import Timeout.travel_tackle.tour.dto.TourDtos.Category;
+import Timeout.travel_tackle.tour.dto.TourDtos.ContentDetail;
+import Timeout.travel_tackle.tour.dto.TourDtos.ContentSummary;
+import Timeout.travel_tackle.tour.dto.TourDtos.Festival;
+import Timeout.travel_tackle.tour.dto.TourDtos.Page;
+import Timeout.travel_tackle.tour.service.TourService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

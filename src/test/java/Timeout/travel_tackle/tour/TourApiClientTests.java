@@ -1,5 +1,6 @@
 package Timeout.travel_tackle.tour;
 
+import Timeout.travel_tackle.tour.client.TourApiClient;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;

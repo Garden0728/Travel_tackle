@@ -1,4 +1,4 @@
-package Timeout.travel_tackle.tour;
+package Timeout.travel_tackle.tour.dto;
 
 import java.time.LocalDate;
 import java.util.List;

@@ -1,4 +1,4 @@
-package Timeout.travel_tackle.tour;
+package Timeout.travel_tackle.tour.client;
 
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
