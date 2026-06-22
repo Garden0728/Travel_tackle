@@ -32,6 +32,14 @@ public enum ErrorCode {
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_016", "만료된 리프레시 토큰입니다."),
     SOCIAL_EMAIL_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "AUTH_017", "인증되지 않은 소셜 이메일입니다."),
 
+    //Tour API에 관련 예외
+    TOUR_API_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "TOUR_001", "관광 API 키가 설정되지 않았습니다."),
+    TOUR_API_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "TOUR_002", "관광 정보를 불러오지 못했습니다."),
+    TOUR_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TOUR_003", "관광 콘텐츠를 찾을 수 없습니다."),
+    INVALID_TOUR_SEARCH_CONDITION(HttpStatus.BAD_REQUEST, "TOUR_004", "관광 검색 조건이 올바르지 않습니다."),
+    CART_ITEM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CART_001", "이미 장바구니에 담긴 관광 콘텐츠입니다."),
+    CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_002", "장바구니 항목을 찾을 수 없습니다."),
+
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_002", "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");
 
