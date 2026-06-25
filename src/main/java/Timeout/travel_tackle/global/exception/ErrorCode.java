@@ -17,6 +17,11 @@ public enum ErrorCode {
     TRIP_DAY_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_007", "여행 일차를 찾을 수 없습니다."),
     TRIP_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_008", "여행 일정 항목을 찾을 수 없습니다."),
     INVALID_TRIP_ITEM_ORDER(HttpStatus.BAD_REQUEST, "TRIP_009", "일정 항목 순서가 올바르지 않습니다."),
+    TRIP_NOT_PUBLISHED(HttpStatus.NOT_FOUND, "TRIP_010", "공개된 여행 계획이 아닙니다."),
+    CANNOT_SAVE_OWN_TRIP(HttpStatus.BAD_REQUEST, "TRIP_011", "본인의 여행 계획은 저장할 수 없습니다."),
+    TRIP_ALREADY_SAVED(HttpStatus.CONFLICT, "TRIP_012", "이미 저장한 여행 계획입니다."),
+    SAVED_TRIP_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_013", "저장한 여행 계획을 찾을 수 없습니다."),
+    TRIP_PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_014", "여행 사진을 찾을 수 없습니다."),
 
     //Auth에 관련 예외
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH_001", "이미 가입된 이메일입니다."),

@@ -134,4 +134,70 @@ public class TripController {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(tripService.moveTripItem(userId, tripId, itemId, request));
     }
+
+    @PatchMapping("/{tripId}/publish")
+    @Operation(summary = "여행 계획 공개 (다른 사용자에게 노출/저장 허용)")
+    public ResponseEntity<TripSummaryResponse> publishTrip(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(tripService.publishTrip(userId, tripId));
+    }
+
+    @PatchMapping("/{tripId}/unpublish")
+    @Operation(summary = "여행 계획 비공개 전환")
+    public ResponseEntity<TripSummaryResponse> unpublishTrip(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(tripService.unpublishTrip(userId, tripId));
+    }
+
+    @PostMapping("/{tripId}/photos")
+    @Operation(summary = "여행 기록 사진 등록 (여러 장 동시 등록 가능)")
+    public ResponseEntity<List<TripPhotoResponse>> addPhotos(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId,
+            @Valid @RequestBody AddTripPhotosRequest request
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(tripService.addPhotos(userId, tripId, request));
+    }
+
+    @GetMapping("/{tripId}/photos")
+    @Operation(summary = "여행 기록 사진 목록 조회")
+    public ResponseEntity<List<TripPhotoResponse>> getPhotos(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(tripService.getPhotos(userId, tripId));
+    }
+
+    @PatchMapping("/{tripId}/photos/{photoId}")
+    @Operation(summary = "여행 기록 사진 설명 수정")
+    public ResponseEntity<TripPhotoResponse> updatePhotoCaption(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId,
+            @PathVariable UUID photoId,
+            @Valid @RequestBody UpdateTripPhotoRequest request
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(tripService.updatePhotoCaption(userId, tripId, photoId, request));
+    }
+
+    @DeleteMapping("/{tripId}/photos/{photoId}")
+    @Operation(summary = "여행 기록 사진 삭제")
+    public ResponseEntity<Void> deletePhoto(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId,
+            @PathVariable UUID photoId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        tripService.deletePhoto(userId, tripId, photoId);
+        return ResponseEntity.noContent().build();
+    }
 }
