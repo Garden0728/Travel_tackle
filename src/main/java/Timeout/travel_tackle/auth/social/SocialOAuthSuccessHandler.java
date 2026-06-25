@@ -36,9 +36,9 @@ public class SocialOAuthSuccessHandler implements AuthenticationSuccessHandler {
             SocialLoginService socialLoginService,
             RefreshTokenService refreshTokenService,
             AuthCookieService authCookieService,
-            @Value("${OAUTH_SUCCESS_REDIRECT_URL:http://localhost:3000/oauth/callback}")
+            @Value("${OAUTH_SUCCESS_REDIRECT_URL:http://localhost:5173/oauth/callback}")
             String successRedirectUrl,
-            @Value("${OAUTH_FAILURE_REDIRECT_URL:http://localhost:3000/login}")
+            @Value("${OAUTH_FAILURE_REDIRECT_URL:http://localhost:5173/login}")
             String failureRedirectUrl
     ) {
         this.socialLoginService = socialLoginService;
