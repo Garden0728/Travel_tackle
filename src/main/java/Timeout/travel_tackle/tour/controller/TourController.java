@@ -1,24 +1,28 @@
 package Timeout.travel_tackle.tour.controller;
 
+import Timeout.travel_tackle.tour.dto.RecommendationDtos.RecommendationsResponse;
 import Timeout.travel_tackle.tour.dto.TourDtos.Area;
 import Timeout.travel_tackle.tour.dto.TourDtos.Category;
 import Timeout.travel_tackle.tour.dto.TourDtos.ContentDetail;
 import Timeout.travel_tackle.tour.dto.TourDtos.ContentSummary;
 import Timeout.travel_tackle.tour.dto.TourDtos.Festival;
 import Timeout.travel_tackle.tour.dto.TourDtos.Page;
+import Timeout.travel_tackle.tour.recommendation.RecommendationService;
 import Timeout.travel_tackle.tour.service.TourService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.time.LocalDate;
-import org.springframework.format.annotation.DateTimeFormat;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tour")
@@ -27,6 +31,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class TourController {
 
     private final TourService tourService;
+    private final RecommendationService recommendationService;
+
+    @GetMapping("/recommended")
+    @Operation(summary = "선호도 기반 섹션 추천")
+    public RecommendationsResponse getRecommendations(@AuthenticationPrincipal Jwt jwt) {
+        return recommendationService.getRecommendations(jwt.getSubject());
+    }
 
     @GetMapping("/areas")
     @Operation(summary = "지역 또는 시군구 코드 조회")

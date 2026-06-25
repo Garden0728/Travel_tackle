@@ -163,6 +163,21 @@ public class TourService {
         return toPage(tourApiClient.getStays(areaCode, sigunguCode, page, size));
     }
 
+    @Cacheable(cacheNames = "tourRecommended")
+    public List<ContentSummary> getFilteredContents(
+            String lDongRegnCd,
+            String contentTypeId,
+            String lclsSystm1,
+            String lclsSystm2,
+            int size
+    ) {
+        return tourApiClient.getFilteredContents(
+                        lDongRegnCd, contentTypeId, lclsSystm1, lclsSystm2, 1, size)
+                .items().stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
     private Page<ContentSummary> toPage(TourApiResult result) {
         return new Page<>(
                 result.items().stream().map(this::toSummary).toList(),

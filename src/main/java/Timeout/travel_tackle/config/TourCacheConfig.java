@@ -22,7 +22,8 @@ public class TourCacheConfig {
                 "tourNearby",
                 "tourDetails",
                 "tourFestivals",
-                "tourStays"
+                "tourStays",
+                "tourRecommended"
         );
         manager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(2_000)
