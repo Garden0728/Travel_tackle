@@ -9,6 +9,7 @@ import Timeout.travel_tackle.auth.repository.UserRepository;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
+import Timeout.travel_tackle.global.util.UuidConverter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -56,13 +57,9 @@ public class AuthenticationService {
 
     @Transactional(readOnly = true)
     public CurrentUserResponse getCurrentUser(String subject) {
-        try {
-            UUID userId = UUID.fromString(subject);
-            return userRepository.findById(userId)
-                    .map(CurrentUserResponse::from)
-                    .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
-        } catch (IllegalArgumentException exception) {
-            throw new CustomException(ErrorCode.UNAUTHENTICATED);
-        }
+        UUID userId = UuidConverter.fromSubject(subject);
+        return userRepository.findById(userId)
+                .map(CurrentUserResponse::from)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
     }
 }

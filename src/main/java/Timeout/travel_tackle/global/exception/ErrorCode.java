@@ -45,6 +45,10 @@ public enum ErrorCode {
     CART_ITEM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CART_001", "이미 장바구니에 담긴 관광 콘텐츠입니다."),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_002", "장바구니 항목을 찾을 수 없습니다."),
 
+    //Preference에 관련 예외
+    PREFERENCE_ALREADY_EXISTS(HttpStatus.CONFLICT, "PREF_001", "이미 선호도가 등록되어 있습니다."),
+    PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "PREF_002", "선호도 정보를 찾을 수 없습니다."),
+
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_002", "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");
 
