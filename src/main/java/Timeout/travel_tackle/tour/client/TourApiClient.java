@@ -145,6 +145,25 @@ public class TourApiClient {
         });
     }
 
+    public TourApiResult getFilteredContents(
+            String lDongRegnCd,
+            String contentTypeId,
+            String lclsSystm1,
+            String lclsSystm2,
+            int page,
+            int size
+    ) {
+        return request("areaBasedList2", builder -> {
+            addIfPresent(builder, "lDongRegnCd", lDongRegnCd);
+            addIfPresent(builder, "contentTypeId", contentTypeId);
+            addIfPresent(builder, "lclsSystm1", lclsSystm1);
+            addIfPresent(builder, "lclsSystm2", lclsSystm2);
+            builder.queryParam("pageNo", page)
+                    .queryParam("numOfRows", size)
+                    .queryParam("arrange", "R");
+        });
+    }
+
     public TourApiResult getStays(
             String areaCode,
             String sigunguCode,

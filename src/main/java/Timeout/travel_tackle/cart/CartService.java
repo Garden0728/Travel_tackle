@@ -5,6 +5,7 @@ import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
+import Timeout.travel_tackle.global.util.UuidConverter;
 import Timeout.travel_tackle.tour.dto.TourDtos.ContentDetail;
 import Timeout.travel_tackle.tour.service.TourService;
 import lombok.RequiredArgsConstructor;
@@ -61,11 +62,7 @@ public class CartService {
     }
 
     private UUID parseUserId(String subject) {
-        try {
-            return UUID.fromString(subject);
-        } catch (IllegalArgumentException exception) {
-            throw new CustomException(ErrorCode.UNAUTHENTICATED);
-        }
+        return UuidConverter.fromSubject(subject);
     }
 
     public record CartItemResponse(
