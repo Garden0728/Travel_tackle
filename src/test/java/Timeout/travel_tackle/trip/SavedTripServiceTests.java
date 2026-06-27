@@ -7,13 +7,14 @@ import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.AddTripItemRequest;
-import Timeout.travel_tackle.trip.dto.AddTripPhotosRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
 import Timeout.travel_tackle.trip.dto.SavedTripResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripItemResponse;
+import Timeout.travel_tackle.trip.dto.TripRecordRequest;
 import Timeout.travel_tackle.trip.dto.TripSummaryResponse;
 import Timeout.travel_tackle.trip.service.SavedTripService;
+import Timeout.travel_tackle.trip.service.TripRecordService;
 import Timeout.travel_tackle.trip.service.TripService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ class SavedTripServiceTests {
 
     @Autowired SavedTripService savedTripService;
     @Autowired TripService tripService;
+    @Autowired TripRecordService tripRecordService;
     @Autowired UserRepository userRepository;
     @Autowired CartItemRepository cartItemRepository;
     @Autowired EntityManager entityManager;
@@ -119,10 +121,10 @@ class SavedTripServiceTests {
     }
 
     @Test
-    void deletingTripWithPhotosAndSavedReferencesSucceeds() {
+    void deletingTripWithRecordAndSavedReferencesSucceeds() {
         UUID tripId = createPublishedTripWithItems(owner, "A");
-        tripService.addPhotos(owner.getId(), tripId, new AddTripPhotosRequest(List.of(
-                new AddTripPhotosRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+        tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("후기 내용",
+                List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
         TripSummaryResponse copy = savedTripService.save(viewer.getId(), tripId);
 
         // 운영에선 요청마다 영속성 컨텍스트가 새로 열린다. 같은 트랜잭션으로 묶인 테스트가
