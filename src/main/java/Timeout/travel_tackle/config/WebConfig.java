@@ -14,7 +14,7 @@ public class WebConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-            @Value("${FRONTEND_ORIGIN:http://localhost:3000}") String frontendOrigin
+            @Value("${FRONTEND_ORIGIN:http://localhost:5173}") String frontendOrigin
     ) {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(frontendOrigin));

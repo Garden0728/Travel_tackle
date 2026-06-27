@@ -134,4 +134,24 @@ public class TripController {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(tripService.moveTripItem(userId, tripId, itemId, request));
     }
+
+    @PatchMapping("/{tripId}/publish")
+    @Operation(summary = "여행 계획 공개 (다른 사용자에게 노출/저장 허용)")
+    public ResponseEntity<TripSummaryResponse> publishTrip(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(tripService.publishTrip(userId, tripId));
+    }
+
+    @PatchMapping("/{tripId}/unpublish")
+    @Operation(summary = "여행 계획 비공개 전환")
+    public ResponseEntity<TripSummaryResponse> unpublishTrip(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(tripService.unpublishTrip(userId, tripId));
+    }
 }

@@ -11,8 +11,11 @@ import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.*;
+import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripDayRepository;
 import Timeout.travel_tackle.trip.repository.TripItemRepository;
+import Timeout.travel_tackle.trip.repository.TripPhotoRepository;
+import Timeout.travel_tackle.trip.repository.TripRecordRepository;
 import Timeout.travel_tackle.trip.repository.TripQueryRepository;
 import Timeout.travel_tackle.trip.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,9 @@ public class TripService {
     private final TripDayRepository tripDayRepository;
     private final TripItemRepository tripItemRepository;
     private final TripQueryRepository tripQueryRepository;
+    private final TripPhotoRepository tripPhotoRepository;
+    private final TripRecordRepository tripRecordRepository;
+    private final SavedTripRepository savedTripRepository;
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
 
@@ -80,6 +86,15 @@ public class TripService {
     @Transactional
     public void deleteTrip(UUID userId, UUID tripId) {
         Trip trip = findTripOwnedBy(userId, tripId);
+        // trips를 FK로 참조하는 행들을 먼저 제거해야 FK 제약 위반 없이 trip 삭제 가능
+        // 기록(사진 → 기록 순), 저장 이력, 일정 순으로 정리
+        tripRecordRepository.findByTrip(trip).ifPresent(record -> {
+            tripPhotoRepository.deleteAllByRecord(record);
+            tripPhotoRepository.flush();
+            tripRecordRepository.delete(record);
+            tripRecordRepository.flush();
+        });
+        savedTripRepository.deleteAllByOriginalTrip(trip);
         deleteAllDaysAndItems(trip);
         tripRepository.delete(trip);
     }
@@ -199,6 +214,22 @@ public class TripService {
         tripItemRepository.saveAll(affectedItems);
 
         return TripItemResponse.from(item);
+    }
+
+    // --- 계획 공개/비공개 ---
+
+    @Transactional
+    public TripSummaryResponse publishTrip(UUID userId, UUID tripId) {
+        Trip trip = findTripOwnedBy(userId, tripId);
+        trip.publish();
+        return TripSummaryResponse.from(trip);
+    }
+
+    @Transactional
+    public TripSummaryResponse unpublishTrip(UUID userId, UUID tripId) {
+        Trip trip = findTripOwnedBy(userId, tripId);
+        trip.unpublish();
+        return TripSummaryResponse.from(trip);
     }
 
     // --- 내부 헬퍼 ---

@@ -18,7 +18,7 @@ public class SocialOAuthFailureHandler implements AuthenticationFailureHandler {
     private final String failureRedirectUrl;
 
     public SocialOAuthFailureHandler(
-            @Value("${OAUTH_FAILURE_REDIRECT_URL:http://localhost:3000/login}")
+            @Value("${OAUTH_FAILURE_REDIRECT_URL:http://localhost:5173/login}")
             String failureRedirectUrl
     ) {
         this.failureRedirectUrl = failureRedirectUrl;
