@@ -7,7 +7,12 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-public record AddTripPhotosRequest(
+/**
+ * 여행 기록 생성·수정 요청.
+ * 내용(content)은 필수, 사진(photos)은 최소 1장 필수(여러 장 가능).
+ */
+public record TripRecordRequest(
+        @NotBlank @Size(max = 2000) String content,
         @NotEmpty @Valid List<PhotoEntry> photos
 ) {
     public record PhotoEntry(

@@ -22,6 +22,8 @@ public enum ErrorCode {
     TRIP_ALREADY_SAVED(HttpStatus.CONFLICT, "TRIP_012", "이미 저장한 여행 계획입니다."),
     SAVED_TRIP_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_013", "저장한 여행 계획을 찾을 수 없습니다."),
     TRIP_PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_014", "여행 사진을 찾을 수 없습니다."),
+    TRIP_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_015", "여행 기록을 찾을 수 없습니다."),
+    TRIP_RECORD_ALREADY_EXISTS(HttpStatus.CONFLICT, "TRIP_016", "이미 작성한 여행 기록이 있습니다. 계획당 기록은 하나만 작성할 수 있습니다."),
 
     //Auth에 관련 예외
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH_001", "이미 가입된 이메일입니다."),

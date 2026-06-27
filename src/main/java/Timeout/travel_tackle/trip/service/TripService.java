@@ -6,7 +6,6 @@ import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
 import Timeout.travel_tackle.entity.TripItem;
-import Timeout.travel_tackle.entity.TripPhoto;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.global.exception.CustomException;
@@ -16,6 +15,7 @@ import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripDayRepository;
 import Timeout.travel_tackle.trip.repository.TripItemRepository;
 import Timeout.travel_tackle.trip.repository.TripPhotoRepository;
+import Timeout.travel_tackle.trip.repository.TripRecordRepository;
 import Timeout.travel_tackle.trip.repository.TripQueryRepository;
 import Timeout.travel_tackle.trip.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +40,7 @@ public class TripService {
     private final TripItemRepository tripItemRepository;
     private final TripQueryRepository tripQueryRepository;
     private final TripPhotoRepository tripPhotoRepository;
+    private final TripRecordRepository tripRecordRepository;
     private final SavedTripRepository savedTripRepository;
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
@@ -86,7 +87,13 @@ public class TripService {
     public void deleteTrip(UUID userId, UUID tripId) {
         Trip trip = findTripOwnedBy(userId, tripId);
         // trips를 FK로 참조하는 행들을 먼저 제거해야 FK 제약 위반 없이 trip 삭제 가능
-        tripPhotoRepository.deleteAllByTrip(trip);
+        // 기록(사진 → 기록 순), 저장 이력, 일정 순으로 정리
+        tripRecordRepository.findByTrip(trip).ifPresent(record -> {
+            tripPhotoRepository.deleteAllByRecord(record);
+            tripPhotoRepository.flush();
+            tripRecordRepository.delete(record);
+            tripRecordRepository.flush();
+        });
         savedTripRepository.deleteAllByOriginalTrip(trip);
         deleteAllDaysAndItems(trip);
         tripRepository.delete(trip);
@@ -225,42 +232,6 @@ public class TripService {
         return TripSummaryResponse.from(trip);
     }
 
-    // --- 여행 기록(사진) ---
-
-    @Transactional
-    public List<TripPhotoResponse> addPhotos(UUID userId, UUID tripId, AddTripPhotosRequest request) {
-        Trip trip = findTripOwnedBy(userId, tripId);
-        List<TripPhoto> photos = request.photos().stream()
-                .map(entry -> new TripPhoto(trip, entry.imageUrl(), entry.caption()))
-                .toList();
-        // flush 해야 @CreationTimestamp(uploadedAt)가 채워진 상태로 응답할 수 있다
-        tripPhotoRepository.saveAllAndFlush(photos);
-        return photos.stream().map(TripPhotoResponse::from).toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<TripPhotoResponse> getPhotos(UUID userId, UUID tripId) {
-        Trip trip = findTripOwnedBy(userId, tripId);
-        return tripPhotoRepository.findAllByTripOrderByUploadedAtDesc(trip)
-                .stream().map(TripPhotoResponse::from).toList();
-    }
-
-    @Transactional
-    public TripPhotoResponse updatePhotoCaption(UUID userId, UUID tripId, UUID photoId,
-                                                UpdateTripPhotoRequest request) {
-        Trip trip = findTripOwnedBy(userId, tripId);
-        TripPhoto photo = findPhotoInTrip(photoId, trip);
-        photo.updateCaption(request.caption());
-        return TripPhotoResponse.from(photo);
-    }
-
-    @Transactional
-    public void deletePhoto(UUID userId, UUID tripId, UUID photoId) {
-        Trip trip = findTripOwnedBy(userId, tripId);
-        TripPhoto photo = findPhotoInTrip(photoId, trip);
-        tripPhotoRepository.delete(photo);
-    }
-
     // --- 내부 헬퍼 ---
 
     private void generateTripDays(Trip trip, LocalDate start, LocalDate end) {
@@ -356,14 +327,5 @@ public class TripService {
             throw new CustomException(ErrorCode.TRIP_ITEM_NOT_FOUND);
         }
         return item;
-    }
-
-    private TripPhoto findPhotoInTrip(UUID photoId, Trip trip) {
-        TripPhoto photo = tripPhotoRepository.findById(photoId)
-                .orElseThrow(() -> new CustomException(ErrorCode.TRIP_PHOTO_NOT_FOUND));
-        if (!photo.getTrip().getId().equals(trip.getId())) {
-            throw new CustomException(ErrorCode.TRIP_PHOTO_NOT_FOUND);
-        }
-        return photo;
     }
 }
