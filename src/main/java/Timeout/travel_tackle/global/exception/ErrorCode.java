@@ -24,6 +24,10 @@ public enum ErrorCode {
     TRIP_PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_014", "여행 사진을 찾을 수 없습니다."),
     TRIP_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_015", "여행 기록을 찾을 수 없습니다."),
     TRIP_RECORD_ALREADY_EXISTS(HttpStatus.CONFLICT, "TRIP_016", "이미 작성한 여행 기록이 있습니다. 계획당 기록은 하나만 작성할 수 있습니다."),
+    FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_017", "피드백을 찾을 수 없습니다."),
+    FEEDBACK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "TRIP_018", "해당 피드백에 접근 권한이 없습니다."),
+    CANNOT_FEEDBACK_OWN_TRIP(HttpStatus.BAD_REQUEST, "TRIP_019", "본인의 여행 계획에는 피드백을 남길 수 없습니다."),
+    FEEDBACK_TARGET_CONFLICT(HttpStatus.BAD_REQUEST, "TRIP_020", "일차(day)와 일정 항목(item)을 동시에 지정할 수 없습니다."),
 
     //Auth에 관련 예외
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH_001", "이미 가입된 이메일입니다."),

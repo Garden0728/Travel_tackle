@@ -15,9 +15,10 @@ public record FeedItemResponse(
         TripStatus status,
         String ownerName,
         String thumbnailUrl,
+        long feedbackCount,
         LocalDateTime createdAt
 ) {
-    public static FeedItemResponse of(Trip trip, String thumbnailUrl) {
+    public static FeedItemResponse of(Trip trip, String thumbnailUrl, long feedbackCount) {
         return new FeedItemResponse(
                 trip.getId(),
                 trip.getTitle(),
@@ -26,6 +27,7 @@ public record FeedItemResponse(
                 trip.getStatus(),
                 trip.getUser().getName(),
                 thumbnailUrl,
+                feedbackCount,
                 trip.getCreatedAt()
         );
     }
