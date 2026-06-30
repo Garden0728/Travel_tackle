@@ -47,6 +47,9 @@ public class SecurityConfig {
                                 "/api/auth/logout"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tour/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/feed/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/trips/*/feedback").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/trips/*/feedback/all").permitAll()
                         .requestMatchers(
                                 "/oauth2/**",
                                 "/login/oauth2/**",

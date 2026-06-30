@@ -13,6 +13,7 @@ import Timeout.travel_tackle.tour.dto.TourDtos.Image;
 import Timeout.travel_tackle.tour.dto.TourDtos.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TourService {
@@ -99,9 +101,15 @@ public class TourService {
         }
 
         JsonNode item = commonResult.items().getFirst();
-        List<Image> images = tourApiClient.getImages(contentId).items().stream()
-                .map(this::toImage)
-                .toList();
+        List<Image> images;
+        try {
+            images = tourApiClient.getImages(contentId).items().stream()
+                    .map(this::toImage)
+                    .toList();
+        } catch (CustomException e) {
+            log.warn("detailImage2 unavailable for contentId={}, proceeding without images", contentId);
+            images = List.of();
+        }
 
         return new ContentDetail(
                 text(item, "contentid"),

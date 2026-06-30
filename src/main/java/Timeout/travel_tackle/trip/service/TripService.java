@@ -16,6 +16,8 @@ import Timeout.travel_tackle.trip.repository.TripDayRepository;
 import Timeout.travel_tackle.trip.repository.TripItemRepository;
 import Timeout.travel_tackle.trip.repository.TripPhotoRepository;
 import Timeout.travel_tackle.trip.repository.TripRecordRepository;
+import Timeout.travel_tackle.trip.repository.TripFeedbackRecommendationRepository;
+import Timeout.travel_tackle.trip.repository.TripFeedbackRepository;
 import Timeout.travel_tackle.trip.repository.TripQueryRepository;
 import Timeout.travel_tackle.trip.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,8 @@ public class TripService {
     private final SavedTripRepository savedTripRepository;
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
+    private final TripFeedbackRepository tripFeedbackRepository;
+    private final TripFeedbackRecommendationRepository tripFeedbackRecommendationRepository;
 
     @Transactional
     public TripSummaryResponse createTrip(UUID userId, CreateTripRequest request) {
@@ -76,7 +80,9 @@ public class TripService {
         trip.updateSchedule(request.title(), request.startDate(), request.endDate());
 
         if (datesChanged) {
-            deleteAllDaysAndItems(trip);
+            // 피드백 참조만 null 처리 (텍스트 보존) → 일차·아이템만 삭제
+            tripQueryRepository.bulkNullifyFeedbackReferences(trip);
+            tripQueryRepository.bulkDeleteDaysAndItems(trip);
             generateTripDays(trip, request.startDate(), request.endDate());
         }
 
@@ -86,8 +92,8 @@ public class TripService {
     @Transactional
     public void deleteTrip(UUID userId, UUID tripId) {
         Trip trip = findTripOwnedBy(userId, tripId);
-        // trips를 FK로 참조하는 행들을 먼저 제거해야 FK 제약 위반 없이 trip 삭제 가능
-        // 기록(사진 → 기록 순), 저장 이력, 일정 순으로 정리
+        // FK 제약 준수 삭제 순서:
+        // 기록(사진→기록), 저장 이력, 피드백(추천→피드백), 일정(아이템→일차), 여행
         tripRecordRepository.findByTrip(trip).ifPresent(record -> {
             tripPhotoRepository.deleteAllByRecord(record);
             tripPhotoRepository.flush();
@@ -95,6 +101,7 @@ public class TripService {
             tripRecordRepository.flush();
         });
         savedTripRepository.deleteAllByOriginalTrip(trip);
+        // bulkDeleteByTrip 내부에서 피드백 추천→피드백→아이템→일차 순으로 삭제
         deleteAllDaysAndItems(trip);
         tripRepository.delete(trip);
     }
@@ -128,6 +135,7 @@ public class TripService {
         Trip trip = findTripOwnedBy(userId, tripId);
         TripDay day = findDayInTrip(dayId, trip);
         TripItem item = findItemInDay(itemId, day);
+        tripFeedbackRepository.clearTripItemById(itemId);
         tripItemRepository.delete(item);
     }
 
