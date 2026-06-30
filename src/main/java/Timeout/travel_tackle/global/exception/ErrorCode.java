@@ -28,6 +28,7 @@ public enum ErrorCode {
     FEEDBACK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "TRIP_018", "해당 피드백에 접근 권한이 없습니다."),
     CANNOT_FEEDBACK_OWN_TRIP(HttpStatus.BAD_REQUEST, "TRIP_019", "본인의 여행 계획에는 피드백을 남길 수 없습니다."),
     FEEDBACK_TARGET_CONFLICT(HttpStatus.BAD_REQUEST, "TRIP_020", "일차(day)와 일정 항목(item)을 동시에 지정할 수 없습니다."),
+    FEEDBACK_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_021", "추천 장소를 찾을 수 없습니다."),
 
     //Auth에 관련 예외
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH_001", "이미 가입된 이메일입니다."),

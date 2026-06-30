@@ -1,5 +1,6 @@
 package Timeout.travel_tackle.trip.controller;
 
+import Timeout.travel_tackle.cart.CartService.CartItemResponse;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.FeedbackResponse;
 import Timeout.travel_tackle.trip.dto.ReceivedFeedbackSummary;
@@ -105,6 +106,18 @@ public class TripFeedbackController {
         UUID userId = UUID.fromString(jwt.getSubject());
         feedbackService.delete(userId, tripId, feedbackId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/api/trips/{tripId}/feedback/recommendations/{recommendationId}/cart")
+    @Operation(summary = "피드백 추천 장소를 내 카트에 담기 (Trip 소유자 전용)")
+    public ResponseEntity<CartItemResponse> addRecommendationToCart(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId,
+            @PathVariable UUID recommendationId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(feedbackService.addRecommendationToCart(userId, tripId, recommendationId));
     }
 
     @GetMapping("/api/trips/feedback/received")

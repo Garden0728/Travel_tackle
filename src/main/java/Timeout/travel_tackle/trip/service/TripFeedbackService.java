@@ -1,6 +1,8 @@
 package Timeout.travel_tackle.trip.service;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
+import Timeout.travel_tackle.cart.CartService;
+import Timeout.travel_tackle.cart.CartService.CartItemResponse;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
 import Timeout.travel_tackle.entity.TripFeedback;
@@ -45,6 +47,7 @@ public class TripFeedbackService {
     private final TripFeedbackRecommendationRepository recommendationRepository;
     private final UserRepository userRepository;
     private final TourService tourService;
+    private final CartService cartService;
 
     @Transactional
     public FeedbackResponse create(UUID userId, UUID tripId, CreateFeedbackRequest request) {
@@ -144,6 +147,22 @@ public class TripFeedbackService {
         }
         recommendationRepository.deleteAllByFeedbackId(feedbackId);
         feedbackRepository.delete(feedback);
+    }
+
+    @Transactional
+    public CartItemResponse addRecommendationToCart(UUID userId, UUID tripId, UUID recommendationId) {
+        TripFeedbackRecommendation rec = recommendationRepository.findByIdWithTripOwner(recommendationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FEEDBACK_RECOMMENDATION_NOT_FOUND));
+        Trip trip = rec.getFeedback().getTrip();
+        if (!trip.getId().equals(tripId)) {
+            throw new CustomException(ErrorCode.FEEDBACK_RECOMMENDATION_NOT_FOUND);
+        }
+        if (!trip.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.TRIP_ACCESS_DENIED);
+        }
+        return cartService.addFromCachedData(userId,
+                rec.getTourApiContentId(), rec.getCachedTitle(),
+                rec.getCachedImageUrl(), rec.getCachedAreaCode());
     }
 
     @Transactional(readOnly = true)

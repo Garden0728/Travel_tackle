@@ -322,6 +322,64 @@ class TripFeedbackServiceTests {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // 추천 장소 → 카트 담기 (Trip 소유자 단축 경로)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void ownerAddsRecommendedPlaceToCart() {
+        when(tourService.getContentDetail("REC001")).thenReturn(stubContent("REC001", "추천 장소"));
+
+        FeedbackResponse feedback = feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("여기 가보세요", null, null,
+                        List.of(new RecommendationRequest("REC001"))));
+        UUID recommendationId = feedback.recommendations().getFirst().id();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        feedbackService.addRecommendationToCart(owner.getId(), tripId, recommendationId);
+
+        boolean saved = cartItemRepository.existsByUserIdAndTourApiContentId(owner.getId(), "REC001");
+        assertTrue(saved);
+    }
+
+    @Test
+    void nonOwnerCannotAddRecommendationToCart() {
+        when(tourService.getContentDetail("REC002")).thenReturn(stubContent("REC002", "추천 장소2"));
+
+        FeedbackResponse feedback = feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("여기 가보세요", null, null,
+                        List.of(new RecommendationRequest("REC002"))));
+        UUID recommendationId = feedback.recommendations().getFirst().id();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        CustomException ex = assertThrows(CustomException.class, () ->
+                feedbackService.addRecommendationToCart(reviewer.getId(), tripId, recommendationId));
+
+        assertEquals(ErrorCode.TRIP_ACCESS_DENIED, ex.getErrorCode());
+    }
+
+    @Test
+    void wrongTripIdRejectedWhenAddingRecommendationToCart() {
+        when(tourService.getContentDetail("REC003")).thenReturn(stubContent("REC003", "추천 장소3"));
+
+        FeedbackResponse feedback = feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("여기 가보세요", null, null,
+                        List.of(new RecommendationRequest("REC003"))));
+        UUID recommendationId = feedback.recommendations().getFirst().id();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        CustomException ex = assertThrows(CustomException.class, () ->
+                feedbackService.addRecommendationToCart(owner.getId(), UUID.randomUUID(), recommendationId));
+
+        assertEquals(ErrorCode.FEEDBACK_RECOMMENDATION_NOT_FOUND, ex.getErrorCode());
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // 연관 삭제
     // ──────────────────────────────────────────────────────────────────────────
 
