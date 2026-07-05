@@ -1,5 +1,6 @@
 package Timeout.travel_tackle.auth.controller;
 
+import Timeout.travel_tackle.auth.dto.ChangePasswordRequest;
 import Timeout.travel_tackle.auth.dto.EmailVerificationConfirmRequest;
 import Timeout.travel_tackle.auth.dto.EmailVerificationRequest;
 import Timeout.travel_tackle.auth.dto.CurrentUserResponse;
@@ -101,6 +102,17 @@ public class AuthController {
     @Operation(summary = "현재 로그인 사용자 조회")
     public ResponseEntity<CurrentUserResponse> me(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(authenticationService.getCurrentUser(jwt.getSubject()));
+    }
+
+    @PatchMapping("/password")
+    @Operation(summary = "로그인 상태 비밀번호 변경")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletResponse response
+    ) {
+        authenticationService.changePassword(jwt.getSubject(), request, response);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/password-resets")

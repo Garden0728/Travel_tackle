@@ -49,6 +49,9 @@ public enum ErrorCode {
     PASSWORD_RESET_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_019", "인증 시도 횟수를 초과했습니다. 재설정을 다시 요청해 주세요."),
     PASSWORD_RESET_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_020", "비밀번호 재설정 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     PASSWORD_RESET_DELIVERY_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_021", "비밀번호 재설정 이메일을 발송하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+    CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_022", "현재 비밀번호가 올바르지 않습니다."),
+    NO_LOCAL_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_023", "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다."),
+    SAME_AS_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_024", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
 
     //Tour API에 관련 예외
     TOUR_API_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "TOUR_001", "관광 API 키가 설정되지 않았습니다."),
