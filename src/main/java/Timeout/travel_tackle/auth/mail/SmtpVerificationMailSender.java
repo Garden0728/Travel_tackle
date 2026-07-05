@@ -22,11 +22,24 @@ public class SmtpVerificationMailSender implements VerificationMailSender {
 
     @Override
     public void sendVerificationCode(String email, String code) {
+        send(email, "[트래블 참견] 이메일 인증번호",
+                "인증번호는 " + code + "입니다. 10분 안에 입력해 주세요.",
+                ErrorCode.EMAIL_DELIVERY_FAILED);
+    }
+
+    @Override
+    public void sendPasswordResetCode(String email, String code) {
+        send(email, "[트래블 참견] 비밀번호 재설정 인증번호",
+                "비밀번호 재설정 인증번호는 " + code + "입니다. 10분 안에 입력해 주세요. 본인이 요청하지 않았다면 이 메일을 무시해 주세요.",
+                ErrorCode.PASSWORD_RESET_DELIVERY_FAILED);
+    }
+
+    private void send(String to, String subject, String text, ErrorCode failureCode) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(email);
-        message.setSubject("[트래블 참견] 이메일 인증번호");
-        message.setText("인증번호는 " + code + "입니다. 10분 안에 입력해 주세요.");
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
         try {
             javaMailSender.send(message);
         } catch (MailException exception) {
@@ -35,7 +48,7 @@ public class SmtpVerificationMailSender implements VerificationMailSender {
                     exception.getClass().getSimpleName(),
                     sanitize(exception.getMessage())
             );
-            throw new CustomException(ErrorCode.EMAIL_DELIVERY_FAILED);
+            throw new CustomException(failureCode);
         }
     }
 
