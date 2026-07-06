@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 public class TourApiClient {
 
     private static final String SUCCESS_CODE = "0000";
+    private static final String DEFAULT_SERVICE = "KorService2"; // 언어 미지정 시 국문 서비스
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -30,7 +31,7 @@ public class TourApiClient {
     private final String mobileApp;
 
     public TourApiClient(
-            @Value("${tour.base-url:https://apis.data.go.kr/B551011/KorService2}") String baseUrl,
+            @Value("${tour.base-url:https://apis.data.go.kr/B551011}") String baseUrl,
             @Value("${tour.service-key:}") String serviceKey,
             @Value("${tour.mobile-app:TravelTackle}") String mobileApp
     ) {
@@ -85,7 +86,22 @@ public class TourApiClient {
             int size,
             String arrange
     ) {
-        return request("searchKeyword2", builder -> {
+        return searchContents(DEFAULT_SERVICE, keyword, areaCode, sigunguCode,
+                contentTypeId, page, size, arrange);
+    }
+
+    /** 언어별 서비스(KorService2/EngService2/JpnService2/...)로 키워드 검색. */
+    public TourApiResult searchContents(
+            String service,
+            String keyword,
+            String areaCode,
+            String sigunguCode,
+            String contentTypeId,
+            int page,
+            int size,
+            String arrange
+    ) {
+        return request(service, "searchKeyword2", builder -> {
             builder.queryParam("keyword", keyword)
                     .queryParam("pageNo", page)
                     .queryParam("numOfRows", size)
@@ -131,17 +147,32 @@ public class TourApiClient {
     public TourApiResult getFestivals(
             String startDate,
             String endDate,
-            String areaCode,
+            String lDongRegnCd,
             int page,
             int size
     ) {
-        return request("searchFestival2", builder -> {
+        return getFestivals(DEFAULT_SERVICE, startDate, endDate, lDongRegnCd, page, size);
+    }
+
+    /**
+     * 언어별 서비스로 축제 검색. v2 축제 데이터는 areaCode가 비어 있으므로
+     * 지역 필터는 lDongRegnCd(법정동 시도 코드)로 한다.
+     */
+    public TourApiResult getFestivals(
+            String service,
+            String startDate,
+            String endDate,
+            String lDongRegnCd,
+            int page,
+            int size
+    ) {
+        return request(service, "searchFestival2", builder -> {
             builder.queryParam("eventStartDate", startDate)
                     .queryParam("pageNo", page)
                     .queryParam("numOfRows", size)
                     .queryParam("arrange", "A");
             addIfPresent(builder, "eventEndDate", endDate);
-            addIfPresent(builder, "areaCode", areaCode);
+            addIfPresent(builder, "lDongRegnCd", lDongRegnCd);
         });
     }
 
@@ -153,14 +184,28 @@ public class TourApiClient {
             int page,
             int size
     ) {
-        return request("areaBasedList2", builder -> {
+        return getFilteredContents(DEFAULT_SERVICE, lDongRegnCd, contentTypeId,
+                lclsSystm1, lclsSystm2, page, size);
+    }
+
+    /** 언어별 서비스로 지역+분류(areaBasedList2) 검색. 키워드가 없어도 지역/유형으로 그라운딩된다. */
+    public TourApiResult getFilteredContents(
+            String service,
+            String lDongRegnCd,
+            String contentTypeId,
+            String lclsSystm1,
+            String lclsSystm2,
+            int page,
+            int size
+    ) {
+        return request(service, "areaBasedList2", builder -> {
             addIfPresent(builder, "lDongRegnCd", lDongRegnCd);
             addIfPresent(builder, "contentTypeId", contentTypeId);
             addIfPresent(builder, "lclsSystm1", lclsSystm1);
             addIfPresent(builder, "lclsSystm2", lclsSystm2);
             builder.queryParam("pageNo", page)
                     .queryParam("numOfRows", size)
-                    .queryParam("arrange", "R");
+                    .queryParam("arrange", "A");
         });
     }
 
@@ -180,6 +225,10 @@ public class TourApiClient {
     }
 
     private TourApiResult request(String endpoint, Consumer<UriBuilder> query) {
+        return request(DEFAULT_SERVICE, endpoint, query);
+    }
+
+    private TourApiResult request(String service, String endpoint, Consumer<UriBuilder> query) {
         if (!StringUtils.hasText(serviceKey)) {
             throw new CustomException(ErrorCode.TOUR_API_NOT_CONFIGURED);
         }
@@ -187,7 +236,7 @@ public class TourApiClient {
         try {
             String payload = restClient.get()
                     .uri(builder -> {
-                        builder.path("/" + endpoint)
+                        builder.path("/" + service + "/" + endpoint)
                                 .queryParam("serviceKey", serviceKey)
                                 .queryParam("MobileOS", "WEB")
                                 .queryParam("MobileApp", mobileApp)

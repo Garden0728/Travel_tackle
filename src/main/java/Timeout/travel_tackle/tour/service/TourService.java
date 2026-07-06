@@ -120,7 +120,10 @@ public class TourService {
                 text(item, "tel"),
                 text(item, "homepage"),
                 text(item, "overview"),
-                images
+                images,
+                text(item, "lclsSystm1"),
+                text(item, "lclsSystm2"),
+                text(item, "lclsSystm3")
         );
     }
 
@@ -128,7 +131,7 @@ public class TourService {
     public Page<Festival> getFestivals(
             LocalDate startDate,
             LocalDate endDate,
-            String areaCode,
+            String lDongRegnCd,
             int page,
             int size
     ) {
@@ -140,7 +143,7 @@ public class TourService {
         TourApiResult result = tourApiClient.getFestivals(
                 formatDate(startDate),
                 endDate == null ? null : formatDate(endDate),
-                areaCode,
+                lDongRegnCd,
                 page,
                 size
         );
@@ -176,6 +179,37 @@ public class TourService {
                 .items().stream()
                 .map(this::toSummary)
                 .toList();
+    }
+
+    /**
+     * 언어별 서비스(KorService2/EngService2/JpnService2/...)로 키워드 검색.
+     * 챗봇 다국어 지원용 — service에 따라 응답 언어가 달라진다(필드 구조는 v2 공통).
+     */
+    @Cacheable(cacheNames = "tourContentsByLang")
+    public List<ContentSummary> searchInLanguage(String service, String keyword, String contentTypeId, int size) {
+        validatePage(1, size);
+        return tourApiClient.searchContents(service, keyword.trim(), null, null, contentTypeId, 1, size, "A")
+                .items().stream().map(this::toSummary).toList();
+    }
+
+    /** 언어별 서비스로 지역+분류(areaBasedList2) 검색 — 키워드 없이 지역/유형으로 그라운딩. */
+    @Cacheable(cacheNames = "tourFilteredByLang")
+    public List<ContentSummary> getFilteredContentsInLanguage(String service, String lDongRegnCd,
+                                                              String contentTypeId, String lclsSystm1,
+                                                              String lclsSystm2, int size) {
+        validatePage(1, size);
+        return tourApiClient.getFilteredContents(service, lDongRegnCd, contentTypeId, lclsSystm1, lclsSystm2, 1, size)
+                .items().stream().map(this::toSummary).toList();
+    }
+
+    /** 언어별 서비스로 축제 검색. */
+    @Cacheable(cacheNames = "tourFestivalsByLang")
+    public List<Festival> getFestivalsInLanguage(String service, LocalDate startDate, LocalDate endDate,
+                                                 String lDongRegnCd, int size) {
+        validatePage(1, size);
+        return tourApiClient.getFestivals(service, formatDate(startDate),
+                        endDate == null ? null : formatDate(endDate), lDongRegnCd, 1, size)
+                .items().stream().map(this::toFestival).toList();
     }
 
     private Page<ContentSummary> toPage(TourApiResult result) {

@@ -91,6 +91,10 @@ public class SavedTripService {
                             item.getTourApiContentId(),
                             item.getCachedTitle(),
                             item.getCachedImageUrl(),
+                            item.getRegionCode(),
+                            item.getLclsSystm1(),
+                            item.getLclsSystm2(),
+                            item.getLclsSystm3(),
                             item.getStartTime(),
                             item.getEndTime(),
                             item.getOrderIndex()))

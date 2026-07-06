@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build
 ./gradlew build
 
-# Run the application
+# Run the application (requires JWT_SECRET; see "Required environment" below)
 ./gradlew bootRun
 
 # Run all tests
@@ -22,15 +22,76 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Clean build outputs AND generated Q-classes
 ./gradlew clean
+
+# Frontend (React + Vite SPA, in frontend/)
+cd frontend && npm install && npm run dev   # dev server on :5173, proxies /api -> :8080
+cd frontend && npm run build                # production build to frontend/dist
 ```
 
 > After `./gradlew clean`, always re-run `./gradlew compileJava` to regenerate Q-classes before building.
 
+> **`AGENTS.md` is a sibling copy of the build/QueryDSL guidance for Codex.** When you change build commands or QueryDSL setup, update both files.
+
 ## Architecture
 
-**Stack**: Spring Boot 4.1.0 · Java 21 · Spring Data JPA · H2 (in-memory) · Lombok · QueryDSL 6.0 (OpenFeign, Jakarta)
+**Stack**: Spring Boot 4.1.0 · Java 21 · Spring Data JPA · H2 (in-memory) · Lombok · QueryDSL 6.0 (OpenFeign, Jakarta) · Spring Security (OAuth2 resource server + OAuth2 client) · Caffeine cache · Spring Mail · springdoc OpenAPI (Swagger). Frontend: React 19 + Vite 7.
 
 **Root package**: `Timeout.travel_tackle` (note: PascalCase — intentional group convention)
+
+### Module layout
+
+Code is organized **by feature**. Each feature package owns its `controller`/`service`/`repository`/`dto`:
+
+- `auth/` — signup, login, JWT, email verification, social (OAuth2) login. See "Authentication" below.
+- `trip/` — travel plans (`Trip` → `TripDay` → `TripItem`), itinerary CRUD/reorder, plus public sharing: feed (`FeedService`/`FeedController`), save-as-copy (`SavedTripService`), and trip records with photos (`TripRecordService`). See "Trip sharing" below.
+- `tour/` — read-only proxy over the Korean public TourAPI (`data.go.kr` KorService2), plus `tour/recommendation/` rule-based recommender. See "Recommendations & preferences" below.
+- `preference/` — per-user travel preferences (`UserPreference`); feeds the recommender.
+- `cart/` — saved tour contents per user.
+- `config/` — `SecurityConfig`, `JwtConfig`, `SocialOAuthConfig`, `WebConfig` (CORS), `QueryDslConfig`, `TourCacheConfig`, `SwaggerConfig`.
+- `global/exception/` — centralized error handling (see below). `global/util/` — shared helpers (e.g. `UuidConverter.fromSubject` turns a JWT subject into the user `UUID`).
+- `entity/` — all JPA `@Entity` classes (shared across features), `entity/Enum/` for enums.
+
+> The top-level `controller/`, `service/`, and `dto/` packages are empty legacy placeholders — put new code in its feature package, not here.
+
+### Authentication
+
+Stateless JWT, sessions disabled (`SessionCreationPolicy.STATELESS`). Two flows converge on the same token issuance:
+
+- **Tokens**: HS256 JWTs signed with `JWT_SECRET` via Nimbus (`JwtConfig`, `JwtService`). Access + refresh tokens are delivered as **httpOnly cookies** by `AuthCookieService` — `access_token` (path `/`) and `refresh_token` (path `/api/auth`). `AuthCookieService implements BearerTokenResolver`: it resolves the bearer token from the `access_token` cookie first, then falls back to the `Authorization` header. `SecurityConfig` wires this as an OAuth2 resource server.
+- **Email/password signup**: 6-digit code emailed via SMTP, BCrypt-hashed, 10-min expiry, rate-limited (60s between requests, 5/hour). Documented in `docs/AUTH.md`.
+- **Social login (Kakao, Google)**: Only active when `social.login.enabled=true`. `SocialOAuthConfig` is `@ConditionalOnProperty` and builds the `ClientRegistrationRepository` only from providers whose client id/secret are set. `SecurityConfig` conditionally enables `oauth2Login` only if a `ClientRegistrationRepository` bean exists, so the app boots fine without social config. On success, `SocialOAuthSuccessHandler` issues cookies then redirects to the frontend.
+
+Public (permitAll) endpoints: `POST /api/auth/{email-verifications,email-verifications/confirm,signup,login,refresh,logout}`, `GET /api/tour/**`, plus `/oauth2/**`, `/login/oauth2/**`, Swagger, and `/h2-console/**`. Everything else requires authentication.
+
+### Tour API integration
+
+`TourApiClient` calls the external Korean TourAPI via `RestClient`. It requires `tour.service-key`; without it, requests throw `TOUR_API_NOT_CONFIGURED`. Responses are JSON-parsed defensively (single object vs. array `item` nodes both handled). `TourService` results are cached with Caffeine (`TourCacheConfig`).
+
+### Recommendations & preferences
+
+`UserPreference` (managed by `preference/`) stores a user's `InterestTag`s, `PreferredRegion`s, `BudgetLevel`, and `TravelStyle` (enums in `entity/Enum/`). `RecommendationService` (`tour/recommendation/`) is **rule-based, not ML**: `PreferenceMapper` is the single source of truth that maps each `InterestTag` → TourAPI params (`contentTypeId`/`lclsSystm` codes) and each `PreferredRegion` → area/lDong region codes, then it composes sections (a personalized section plus dedicated Food/Cafe/Festival sections) by querying `TourService`. When a user has no saved preference it returns `buildDefaultRecommendations()`. When extending recommendations, edit the `PreferenceMapper` switch rather than scattering TourAPI codes through the service.
+
+### Trip sharing, feed & records
+
+Plans start private and are made public via a publish flag on `Trip` (`isPublished`). Once published:
+- **Feed** (`FeedService`): latest-first paginated list of public trips; each trip's thumbnail is the earliest-uploaded `TripPhoto` of its `TripRecord`s.
+- **Save-as-copy** (`SavedTripService`): saving someone else's public trip **deep-copies** the whole `Trip`/`TripDay`/`TripItem` graph into a new trip owned by the saver (you cannot save your own trip or save the same one twice).
+- **Records** (`TripRecordService`): `TripRecord` + `TripPhoto` are post-trip photo logs attached to a trip.
+
+**Credit billing is deferred (not implemented).** `CreditTransaction` / `CreditTransactionReason` / `User.creditBalance` exist as scaffolding, but no flow charges credits yet — `SavedTripService.save` has an explicit commented hook (`[과금 보류]`) marking where deduction + transaction logging will go once pricing policy is decided. Do not invent a pricing policy; surface the decision to the user.
+
+### Exception handling convention
+
+Do **not** throw ad-hoc exceptions. Throw `CustomException(ErrorCode.X)` where `ErrorCode` (`global/exception/ErrorCode.java`) is the single registry of every error — each entry carries an HTTP status, a stable code (e.g. `TRIP_005`, `AUTH_014`), and a Korean user message. `GlobalExceptionHandler` maps these to `ErrorResponse`. Add a new `ErrorCode` enum constant rather than reusing a loosely-matching one.
+
+### Entity conventions
+
+- UUID primary keys (`@GeneratedValue(strategy = GenerationType.UUID)`).
+- `@NoArgsConstructor(access = PROTECTED)` + public domain constructors that **validate invariants and throw `CustomException`** (e.g. `Trip` rejects end-before-start). Keep validation in the entity, not the service.
+- Relationships are all `fetch = LAZY`.
+- `TripItem` has a unique constraint on `(trip_day_id, order_index)`. Reordering itinerary items must avoid transient duplicate `order_index` collisions within a day — this is the subject of recent reorder bug fixes.
+
+The full entity/column reference lives in `docs/ENTITIES.md`; `scripts/render_entities_md.py` renders it to `docs/ENTITIES.png` (requires Pillow + the macOS AppleSDGothicNeo font). Keep `docs/ENTITIES.md` in sync when you change entities.
 
 ### QueryDSL setup
 
@@ -40,8 +101,20 @@ Q-classes are generated into `src/main/generated/` (tracked in `sourceSets`, **n
 - `jakarta.annotation:jakarta.annotation-api`
 - `jakarta.persistence:jakarta.persistence-api`
 
-When adding a new `@Entity`, run `./gradlew compileJava` to produce its corresponding `Q<EntityName>` class in `src/main/generated/`.
+When adding a new `@Entity`, run `./gradlew compileJava` to produce its corresponding `Q<EntityName>` class in `src/main/generated/`. Feature `*QueryRepository` classes (e.g. `trip/repository/TripQueryRepository`) hold the QueryDSL queries.
 
 ### Data layer
 
-H2 runs in-memory; there is no external database to configure for local development or tests. JPA DDL is managed automatically by Hibernate on startup.
+H2 runs in-memory (`jdbc:h2:mem:travel_tackle`); there is no external database to configure for local development or tests. JPA DDL is `create` (rebuilt every boot). H2 console at `/h2-console`.
+
+## Required environment
+
+- **`JWT_SECRET`** (required, must be ≥ 32 bytes) — the app fails to start without it. Tests supply it via `src/test/resources/application.properties`.
+- Optional/defaulted: `JWT_ACCESS_TOKEN_SECONDS` (900), `JWT_REFRESH_TOKEN_DAYS` (14), `AUTH_COOKIE_SECURE` (false), `FRONTEND_ORIGIN` (`http://localhost:5173`, used by CORS), `OAUTH_SUCCESS_REDIRECT_URL`, `OAUTH_FAILURE_REDIRECT_URL`.
+- Social login: `social.login.enabled=true` plus `KAKAO_CLIENT_ID`/`KAKAO_CLIENT_SECRET` and/or `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+- SMTP (`SMTP_HOST`/`PORT`/`USERNAME`/`PASSWORD`/`AUTH`/`STARTTLS`, `MAIL_FROM`) — see `docs/AUTH.md`. Tests use a fake mail sender, not real SMTP.
+- `tour.service-key` — TourAPI key.
+
+## Frontend
+
+`frontend/` is a React 19 + Vite 7 SPA. The Vite dev server (`:5173`) proxies `/api` to the backend at `:8080`, and the backend CORS (`WebConfig`) allows `FRONTEND_ORIGIN` with credentials so the httpOnly auth cookies work cross-origin.
