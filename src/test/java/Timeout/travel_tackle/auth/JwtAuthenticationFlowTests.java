@@ -97,6 +97,11 @@ class JwtAuthenticationFlowTests {
             codes.put(email, code);
         }
 
+        @Override
+        public void sendPasswordResetCode(String email, String code) {
+            codes.put(email, code);
+        }
+
         String codeFor(String email) {
             return codes.get(email);
         }

@@ -43,6 +43,15 @@ public enum ErrorCode {
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_015", "유효하지 않은 리프레시 토큰입니다."),
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_016", "만료된 리프레시 토큰입니다."),
     SOCIAL_EMAIL_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, "AUTH_017", "인증되지 않은 소셜 이메일입니다."),
+    // 비밀번호 재설정은 EMAIL_VERIFICATION_*(NOT_FOUND/EXPIRED/ALREADY_USED)와 달리 상태를 세분화하지 않고
+    // 하나로 합친다 — 실패 시 계정 탈취로 이어질 수 있어, 공격자에게 상태 정보를 주지 않기 위한 의도적 차이.
+    INVALID_OR_EXPIRED_PASSWORD_RESET_CODE(HttpStatus.BAD_REQUEST, "AUTH_018", "인증번호가 올바르지 않거나 만료되었습니다."),
+    PASSWORD_RESET_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_019", "인증 시도 횟수를 초과했습니다. 재설정을 다시 요청해 주세요."),
+    PASSWORD_RESET_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_020", "비밀번호 재설정 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
+    PASSWORD_RESET_DELIVERY_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_021", "비밀번호 재설정 이메일을 발송하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+    CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH_022", "현재 비밀번호가 올바르지 않습니다."),
+    NO_LOCAL_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_023", "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다."),
+    SAME_AS_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_024", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
 
     //Tour API에 관련 예외
     TOUR_API_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "TOUR_001", "관광 API 키가 설정되지 않았습니다."),

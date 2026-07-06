@@ -1,5 +1,6 @@
 package Timeout.travel_tackle.auth.service;
 
+import Timeout.travel_tackle.auth.dto.ChangePasswordRequest;
 import Timeout.travel_tackle.auth.dto.CurrentUserResponse;
 import Timeout.travel_tackle.auth.dto.LoginRequest;
 import Timeout.travel_tackle.auth.jwt.AuthCookieService;
@@ -61,5 +62,36 @@ public class AuthenticationService {
         return userRepository.findById(userId)
                 .map(CurrentUserResponse::from)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+    }
+
+    @Transactional
+    public void changePassword(String subject, ChangePasswordRequest request, HttpServletResponse response) {
+        UUID userId = UuidConverter.fromSubject(subject);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+
+        if (user.getPasswordHash() == null) {
+            throw new CustomException(ErrorCode.NO_LOCAL_PASSWORD);
+        }
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new CustomException(ErrorCode.CURRENT_PASSWORD_MISMATCH);
+        }
+        // currentPassword는 위에서 이미 해시와 일치함이 확인됐으므로, newPassword가 그것과
+        // 문자열까지 동일하면 굳이 BCrypt를 한 번 더 돌리지 않고 바로 판단할 수 있다.
+        if (request.newPassword().equals(request.currentPassword())
+                || passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new CustomException(ErrorCode.SAME_AS_CURRENT_PASSWORD);
+        }
+
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
+        refreshTokenService.revokeAllTokens(user);
+
+        // revokeAllTokens()는 clearAutomatically=true라 user가 detach된다.
+        // detach된 엔티티로 issueTokens()를 호출하면 새 RefreshToken의 @ManyToOne 참조가
+        // 깨질 수 있으니, 반드시 다시 조회한 뒤에 토큰을 발급한다.
+        User reloaded = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+        AuthTokens tokens = refreshTokenService.issueTokens(reloaded);
+        authCookieService.writeTokens(response, tokens);
     }
 }

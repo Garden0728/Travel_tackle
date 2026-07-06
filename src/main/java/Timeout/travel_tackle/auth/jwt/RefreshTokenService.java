@@ -55,6 +55,11 @@ public class RefreshTokenService { //refresh 관련
                 .ifPresent(token -> token.revoke(LocalDateTime.now()));
     }
 
+    @Transactional
+    public void revokeAllTokens(User user) {
+        refreshTokenRepository.revokeAllActiveByUser(user, LocalDateTime.now());
+    }
+
     private void saveRefreshToken(User user, String refreshToken) {
         LocalDateTime expiresAt = LocalDateTime.now().plus(properties.refreshTokenTtl());
         refreshTokenRepository.save(new RefreshToken(user, hash(refreshToken), expiresAt));
