@@ -65,7 +65,8 @@ public class CartService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
         CartItem cartItem = cartItemRepository.save(
-                new CartItem(user, tourApiContentId, cachedTitle, cachedImageUrl, cachedRegionCode));
+                new CartItem(user, tourApiContentId, cachedTitle, cachedImageUrl, cachedRegionCode,
+                        null, null, null));
         return CartItemResponse.from(cartItem);
     }
 
