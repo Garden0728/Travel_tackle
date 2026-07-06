@@ -149,7 +149,7 @@ class SavedTripServiceTests {
 
         for (String contentId : contentIds) {
             CartItem cartItem = cartItemRepository.save(
-                    new CartItem(tripOwner, contentId, contentId, null, "1"));
+                    new CartItem(tripOwner, contentId, contentId, null, "1", null, null, null));
             tripService.addTripItem(ownerId, tripId, dayId,
                     new AddTripItemRequest(cartItem.getId(), null, null));
         }

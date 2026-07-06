@@ -35,6 +35,18 @@ public class TripItem {
     @Column(name = "cached_image_url")
     private String cachedImageUrl; //사진 url
 
+    @Column(name = "region_code")
+    private String regionCode; //관광지 지역 코드 (취향 매칭용)
+
+    @Column(name = "lcls_systm1")
+    private String lclsSystm1; //분류체계 대분류 (취향 매칭용)
+
+    @Column(name = "lcls_systm2")
+    private String lclsSystm2; //분류체계 중분류
+
+    @Column(name = "lcls_systm3")
+    private String lclsSystm3; //분류체계 소분류
+
     @Column(name = "start_time")
     private LocalTime startTime; //방문 시간
 
@@ -45,7 +57,9 @@ public class TripItem {
     private int orderIndex; //관고아 방문 순서
 
     public TripItem(TripDay tripDay, String tourApiContentId, String cachedTitle,
-                    String cachedImageUrl, LocalTime startTime, LocalTime endTime,
+                    String cachedImageUrl, String regionCode,
+                    String lclsSystm1, String lclsSystm2, String lclsSystm3,
+                    LocalTime startTime, LocalTime endTime,
                     int orderIndex) {
         validateTime(startTime, endTime);
         validateOrderIndex(orderIndex);
@@ -53,6 +67,10 @@ public class TripItem {
         this.tourApiContentId = tourApiContentId;
         this.cachedTitle = cachedTitle;
         this.cachedImageUrl = cachedImageUrl;
+        this.regionCode = regionCode;
+        this.lclsSystm1 = lclsSystm1;
+        this.lclsSystm2 = lclsSystm2;
+        this.lclsSystm3 = lclsSystm3;
         this.startTime = startTime;
         this.endTime = endTime;
         this.orderIndex = orderIndex;

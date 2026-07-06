@@ -44,43 +44,63 @@ public class RecommendationService {
 
         UserPreference preference = preferenceOpt.get();
         String lDongRegnCd = pickRandomLDongRegnCd(preference.getPreferredRegions());
-        String areaCode = pickRandomAreaCode(preference.getPreferredRegions());
         String regionName = toRegionName(preference.getPreferredRegions(), lDongRegnCd);
+        Set<String> preferredAreaCodes = preference.getPreferredRegions().stream()
+                .map(PreferenceMapper::toAreaCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         return new RecommendationsResponse(List.of(
-                buildPersonalSection(preference.getInterestTags(), lDongRegnCd),
+                buildPersonalSection(preference.getInterestTags(), lDongRegnCd, preferredAreaCodes),
                 buildFoodSection(lDongRegnCd, regionName),
                 buildCafeSection(lDongRegnCd, regionName),
-                buildFestivalSection(areaCode)
+                buildFestivalSection(lDongRegnCd)
         ));
     }
 
-    private RecommendedSection buildPersonalSection(Set<InterestTag> tags, String lDongRegnCd) {
+    private RecommendedSection buildPersonalSection(Set<InterestTag> tags, String lDongRegnCd,
+                                                    Set<String> preferredAreaCodes) {
         List<InterestTag> candidates = tags.stream()
                 .filter(t -> !DEDICATED_SECTION_TAGS.contains(t))
-                .collect(Collectors.toCollection(ArrayList::new));
+                .sorted()
+                .toList();
 
         if (candidates.isEmpty()) {
-            candidates = new ArrayList<>(List.of(InterestTag.NATURE, InterestTag.HISTORY));
+            candidates = List.of(InterestTag.NATURE, InterestTag.HISTORY);
         }
 
-        Collections.shuffle(candidates);
+        // 관심사별 후보를 TourAPI 관련도 순서 그대로 보관한다(관심사 전부 반영).
+        List<List<ContentSummary>> perTag = candidates.stream()
+                .map(tag -> fetchFiltered(lDongRegnCd, PreferenceMapper.toApiParams(tag)))
+                .toList();
 
-        List<ContentSummary> merged = new ArrayList<>();
+        // 라운드로빈으로 합쳐 모든 관심사를 고르게 반영하고,
+        // 선호 지역과 일치하는 항목을 앞으로 보낸다(안정 정렬이라 관련도 순서는 유지).
+        List<ContentSummary> ordered = roundRobin(perTag).stream()
+                .sorted(Comparator.comparingInt(
+                        c -> preferredAreaCodes.contains(c.areaCode()) ? 0 : 1))
+                .toList();
+
+        return new RecommendedSection("personal", "맞춤 추천", takeTop(ordered, SECTION_SIZE));
+    }
+
+    /** 여러 후보 목록을 한 개씩 번갈아 뽑아 합친다(contentId 기준 중복 제거). */
+    private List<ContentSummary> roundRobin(List<List<ContentSummary>> lists) {
+        List<ContentSummary> result = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-
-        for (InterestTag tag : candidates.subList(0, Math.min(2, candidates.size()))) {
-            PreferenceMapper.TourApiParams params = PreferenceMapper.toApiParams(tag);
-            for (ContentSummary item : fetchFiltered(lDongRegnCd, params)) {
-                if (seen.add(item.contentId())) {
-                    merged.add(item);
+        int max = lists.stream().mapToInt(List::size).max().orElse(0);
+        for (int i = 0; i < max; i++) {
+            for (List<ContentSummary> list : lists) {
+                if (i < list.size() && seen.add(list.get(i).contentId())) {
+                    result.add(list.get(i));
                 }
             }
         }
+        return result;
+    }
 
-        Collections.shuffle(merged);
-        return new RecommendedSection("personal", "맞춤 추천",
-                merged.subList(0, Math.min(SECTION_SIZE, merged.size())));
+    private List<ContentSummary> takeTop(List<ContentSummary> items, int size) {
+        return items.subList(0, Math.min(size, items.size()));
     }
 
     private RecommendedSection buildFoodSection(String lDongRegnCd, String regionName) {
@@ -97,11 +117,11 @@ public class RecommendationService {
         return new RecommendedSection("cafe", title, shuffleAndTake(items));
     }
 
-    private RecommendedSection buildFestivalSection(String areaCode) {
+    private RecommendedSection buildFestivalSection(String lDongRegnCd) {
         LocalDate today = LocalDate.now();
         LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
         try {
-            List<ContentSummary> items = tourService.getFestivals(today, endOfMonth, areaCode, 1, FETCH_SIZE)
+            List<ContentSummary> items = tourService.getFestivals(today, endOfMonth, lDongRegnCd, 1, FETCH_SIZE)
                     .items().stream()
                     .map(this::festivalToSummary)
                     .collect(Collectors.toCollection(ArrayList::new));
@@ -150,14 +170,6 @@ public class RecommendationService {
     private String pickRandomLDongRegnCd(Set<PreferredRegion> regions) {
         List<String> codes = regions.stream()
                 .map(PreferenceMapper::toLDongRegnCd)
-                .filter(Objects::nonNull)
-                .toList();
-        return codes.isEmpty() ? null : codes.get(new Random().nextInt(codes.size()));
-    }
-
-    private String pickRandomAreaCode(Set<PreferredRegion> regions) {
-        List<String> codes = regions.stream()
-                .map(PreferenceMapper::toAreaCode)
                 .filter(Objects::nonNull)
                 .toList();
         return codes.isEmpty() ? null : codes.get(new Random().nextInt(codes.size()));

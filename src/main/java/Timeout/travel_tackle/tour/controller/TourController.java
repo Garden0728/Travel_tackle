@@ -97,11 +97,11 @@ public class TourController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(required = false) String areaCode,
+            @RequestParam(required = false) String lDongRegnCd,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return tourService.getFestivals(startDate, endDate, areaCode, page, size);
+        return tourService.getFestivals(startDate, endDate, lDongRegnCd, page, size);
     }
 
     @GetMapping("/stays")

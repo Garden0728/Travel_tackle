@@ -40,7 +40,10 @@ public class CartService {
                 content.contentId(),
                 content.title(),
                 content.imageUrl(),
-                content.areaCode()
+                content.areaCode(),
+                content.lclsSystm1(),
+                content.lclsSystm2(),
+                content.lclsSystm3()
         ));
         return CartItemResponse.from(cartItem);
     }

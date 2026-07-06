@@ -69,7 +69,10 @@ public final class TourDtos {
             String telephone,
             String homepage,
             String overview,
-            List<Image> images
+            List<Image> images,
+            String lclsSystm1,
+            String lclsSystm2,
+            String lclsSystm3
     ) {
     }
 
