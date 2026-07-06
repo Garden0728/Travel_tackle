@@ -17,12 +17,14 @@ public record PublicTripDetailResponse(
         String ownerName,
         LocalDateTime createdAt,
         List<TripDayResponse> days,
-        TripRecordResponse record
+        TripRecordResponse record,
+        long feedbackCount
 ) {
     public static PublicTripDetailResponse of(
             Trip trip,
             List<TripDayResponse> days,
-            TripRecordResponse record
+            TripRecordResponse record,
+            long feedbackCount
     ) {
         return new PublicTripDetailResponse(
                 trip.getId(),
@@ -33,7 +35,8 @@ public record PublicTripDetailResponse(
                 trip.getUser().getName(),
                 trip.getCreatedAt(),
                 days,
-                record
+                record,
+                feedbackCount
         );
     }
 }

@@ -1,6 +1,8 @@
 package Timeout.travel_tackle.trip.repository;
 
 import Timeout.travel_tackle.entity.QTripDay;
+import Timeout.travel_tackle.entity.QTripFeedback;
+import Timeout.travel_tackle.entity.QTripFeedbackRecommendation;
 import Timeout.travel_tackle.entity.QTripItem;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
@@ -59,9 +61,41 @@ public class TripQueryRepository {
     }
 
     /**
-     * 여행 전체 삭제 — 서브쿼리로 TripItem, TripDay 각 1번의 DELETE로 처리
+     * 여행 전체 삭제 — deleteTrip()에서 호출.
+     * 피드백 추천 → 피드백 → 아이템 → 일차 순으로 삭제 (FK 제약 준수)
      */
     public void bulkDeleteByTrip(Trip trip) {
+        QTripDay qDay = new QTripDay("qDay");
+        QTripItem qItem = QTripItem.tripItem;
+        QTripFeedback qFeedback = QTripFeedback.tripFeedback;
+        QTripFeedbackRecommendation qRec = QTripFeedbackRecommendation.tripFeedbackRecommendation;
+
+        queryFactory.delete(qRec)
+                .where(qRec.feedback.in(
+                        JPAExpressions.selectFrom(qFeedback).where(qFeedback.trip.eq(trip))
+                ))
+                .execute();
+
+        queryFactory.delete(qFeedback)
+                .where(qFeedback.trip.eq(trip))
+                .execute();
+
+        queryFactory.delete(qItem)
+                .where(qItem.tripDay.in(
+                        JPAExpressions.selectFrom(qDay).where(qDay.trip.eq(trip))
+                ))
+                .execute();
+
+        queryFactory.delete(qDay)
+                .where(qDay.trip.eq(trip))
+                .execute();
+    }
+
+    /**
+     * 날짜 변경 시 일차·아이템만 삭제. 피드백은 건드리지 않는다.
+     * (피드백 day/item 참조는 bulkNullifyFeedbackReferences로 먼저 끊어둔다)
+     */
+    public void bulkDeleteDaysAndItems(Trip trip) {
         QTripDay qDay = new QTripDay("qDay");
         QTripItem qItem = QTripItem.tripItem;
 
@@ -73,6 +107,25 @@ public class TripQueryRepository {
 
         queryFactory.delete(qDay)
                 .where(qDay.trip.eq(trip))
+                .execute();
+    }
+
+    /**
+     * 날짜 변경으로 일차·아이템을 초기화할 때 피드백의 day/item 참조를 null로 처리.
+     * 피드백 텍스트는 보존하고 참조만 끊는다.
+     */
+    public void bulkNullifyFeedbackReferences(Trip trip) {
+        QTripFeedback qFeedback = QTripFeedback.tripFeedback;
+        QTripDay qDay = new QTripDay("qDay");
+
+        queryFactory.update(qFeedback)
+                .setNull(qFeedback.tripItem)
+                .where(qFeedback.trip.eq(trip), qFeedback.tripItem.isNotNull())
+                .execute();
+
+        queryFactory.update(qFeedback)
+                .setNull(qFeedback.tripDay)
+                .where(qFeedback.trip.eq(trip), qFeedback.tripDay.isNotNull())
                 .execute();
     }
 }

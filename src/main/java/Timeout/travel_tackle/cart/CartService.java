@@ -54,6 +54,19 @@ public class CartService {
     }
 
     @Transactional
+    public CartItemResponse addFromCachedData(UUID userId, String tourApiContentId,
+                                              String cachedTitle, String cachedImageUrl, String cachedRegionCode) {
+        if (cartItemRepository.existsByUserIdAndTourApiContentId(userId, tourApiContentId)) {
+            throw new CustomException(ErrorCode.CART_ITEM_ALREADY_EXISTS);
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+        CartItem cartItem = cartItemRepository.save(
+                new CartItem(user, tourApiContentId, cachedTitle, cachedImageUrl, cachedRegionCode));
+        return CartItemResponse.from(cartItem);
+    }
+
+    @Transactional
     public void remove(String subject, UUID cartItemId) {
         UUID userId = parseUserId(subject);
         CartItem cartItem = cartItemRepository.findByIdAndUserId(cartItemId, userId)
