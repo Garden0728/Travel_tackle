@@ -1,4 +1,4 @@
-package Timeout.travel_tackle.cart;
+package Timeout.travel_tackle.cart.repository;
 
 import Timeout.travel_tackle.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;

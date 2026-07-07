@@ -1,8 +1,8 @@
 package Timeout.travel_tackle.trip.service;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
-import Timeout.travel_tackle.cart.CartService;
-import Timeout.travel_tackle.cart.CartService.CartItemResponse;
+import Timeout.travel_tackle.cart.service.CartService;
+import Timeout.travel_tackle.cart.service.CartService.CartItemResponse;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
 import Timeout.travel_tackle.entity.TripFeedback;

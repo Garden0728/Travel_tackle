@@ -1,7 +1,7 @@
 package Timeout.travel_tackle.auth;
 
 import Timeout.travel_tackle.auth.dto.SignupRequest;
-import Timeout.travel_tackle.auth.jwt.JwtService;
+import Timeout.travel_tackle.auth.jwt.service.JwtService;
 import Timeout.travel_tackle.auth.mail.VerificationMailSender;
 import Timeout.travel_tackle.auth.repository.UserRepository;
 import Timeout.travel_tackle.auth.service.EmailVerificationService;

@@ -1,4 +1,4 @@
-package Timeout.travel_tackle.preference;
+package Timeout.travel_tackle.preference.repository;
 
 import Timeout.travel_tackle.entity.UserPreference;
 import org.springframework.data.jpa.repository.EntityGraph;

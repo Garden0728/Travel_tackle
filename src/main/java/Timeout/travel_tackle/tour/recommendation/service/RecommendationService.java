@@ -1,11 +1,12 @@
-package Timeout.travel_tackle.tour.recommendation;
+package Timeout.travel_tackle.tour.recommendation.service;
+import Timeout.travel_tackle.tour.recommendation.PreferenceMapper;
 
 import Timeout.travel_tackle.entity.Enum.InterestTag;
 import Timeout.travel_tackle.entity.Enum.PreferredRegion;
 import Timeout.travel_tackle.entity.UserPreference;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.util.UuidConverter;
-import Timeout.travel_tackle.preference.UserPreferenceRepository;
+import Timeout.travel_tackle.preference.repository.UserPreferenceRepository;
 import Timeout.travel_tackle.tour.dto.RecommendationDtos.RecommendedSection;
 import Timeout.travel_tackle.tour.dto.RecommendationDtos.RecommendationsResponse;
 import Timeout.travel_tackle.tour.dto.TourDtos.ContentSummary;

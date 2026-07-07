@@ -1,7 +1,7 @@
-package Timeout.travel_tackle.auth.jwt;
+package Timeout.travel_tackle.auth.jwt.service;
 
 import Timeout.travel_tackle.auth.repository.RefreshTokenRepository;
-import Timeout.travel_tackle.config.JwtConfig.JwtProperties;
+import Timeout.travel_tackle.auth.jwt.JwtProperties;
 import Timeout.travel_tackle.entity.RefreshToken;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;

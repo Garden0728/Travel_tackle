@@ -1,4 +1,5 @@
-package Timeout.travel_tackle.preference;
+package Timeout.travel_tackle.preference.controller;
+import Timeout.travel_tackle.preference.service.UserPreferenceService;
 
 import Timeout.travel_tackle.preference.dto.PreferenceRequest;
 import Timeout.travel_tackle.preference.dto.PreferenceResponse;

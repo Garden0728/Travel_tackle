@@ -1,6 +1,7 @@
-package Timeout.travel_tackle.cart;
+package Timeout.travel_tackle.cart.controller;
+import Timeout.travel_tackle.cart.service.CartService;
 
-import Timeout.travel_tackle.cart.CartService.CartItemResponse;
+import Timeout.travel_tackle.cart.service.CartService.CartItemResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

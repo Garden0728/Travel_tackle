@@ -1,7 +1,7 @@
 package Timeout.travel_tackle.trip;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
-import Timeout.travel_tackle.cart.CartItemRepository;
+import Timeout.travel_tackle.cart.repository.CartItemRepository;
 import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;

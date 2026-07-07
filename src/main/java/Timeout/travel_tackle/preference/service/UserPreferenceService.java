@@ -1,4 +1,5 @@
-package Timeout.travel_tackle.preference;
+package Timeout.travel_tackle.preference.service;
+import Timeout.travel_tackle.preference.repository.UserPreferenceRepository;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
 import Timeout.travel_tackle.entity.User;

@@ -7,7 +7,7 @@ import Timeout.travel_tackle.tour.dto.TourDtos.ContentDetail;
 import Timeout.travel_tackle.tour.dto.TourDtos.ContentSummary;
 import Timeout.travel_tackle.tour.dto.TourDtos.Festival;
 import Timeout.travel_tackle.tour.dto.TourDtos.Page;
-import Timeout.travel_tackle.tour.recommendation.RecommendationService;
+import Timeout.travel_tackle.tour.recommendation.service.RecommendationService;
 import Timeout.travel_tackle.tour.service.TourService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
