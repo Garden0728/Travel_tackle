@@ -1,6 +1,6 @@
 package Timeout.travel_tackle.auth.service;
 
-import Timeout.travel_tackle.auth.jwt.RefreshTokenService;
+import Timeout.travel_tackle.auth.jwt.service.RefreshTokenService;
 import Timeout.travel_tackle.auth.mail.VerificationMailSender;
 import Timeout.travel_tackle.auth.repository.PasswordResetRepository;
 import Timeout.travel_tackle.auth.repository.UserRepository;

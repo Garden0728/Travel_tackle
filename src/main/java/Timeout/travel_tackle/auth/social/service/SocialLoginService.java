@@ -1,4 +1,4 @@
-package Timeout.travel_tackle.auth.social;
+package Timeout.travel_tackle.auth.social.service;
 
 import Timeout.travel_tackle.auth.repository.UserAuthProviderRepository;
 import Timeout.travel_tackle.auth.repository.UserRepository;

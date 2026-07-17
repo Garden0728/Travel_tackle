@@ -1,7 +1,7 @@
 package Timeout.travel_tackle.auth;
 
 import Timeout.travel_tackle.auth.repository.UserAuthProviderRepository;
-import Timeout.travel_tackle.auth.social.SocialLoginService;
+import Timeout.travel_tackle.auth.social.service.SocialLoginService;
 import Timeout.travel_tackle.entity.Enum.AuthProvider;
 import Timeout.travel_tackle.entity.User;
 import jakarta.persistence.EntityManager;

@@ -1,8 +1,9 @@
 package Timeout.travel_tackle.auth.social;
+import Timeout.travel_tackle.auth.social.service.SocialLoginService;
 
 import Timeout.travel_tackle.auth.jwt.AuthCookieService;
-import Timeout.travel_tackle.auth.jwt.RefreshTokenService;
-import Timeout.travel_tackle.auth.jwt.RefreshTokenService.AuthTokens;
+import Timeout.travel_tackle.auth.jwt.service.RefreshTokenService;
+import Timeout.travel_tackle.auth.jwt.service.RefreshTokenService.AuthTokens;
 import Timeout.travel_tackle.entity.Enum.AuthProvider;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;

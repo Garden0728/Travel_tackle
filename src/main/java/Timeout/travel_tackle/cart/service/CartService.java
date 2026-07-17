@@ -1,4 +1,5 @@
-package Timeout.travel_tackle.cart;
+package Timeout.travel_tackle.cart.service;
+import Timeout.travel_tackle.cart.repository.CartItemRepository;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
 import Timeout.travel_tackle.entity.CartItem;

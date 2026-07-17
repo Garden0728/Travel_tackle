@@ -1,6 +1,6 @@
 package Timeout.travel_tackle.trip.controller;
 
-import Timeout.travel_tackle.cart.CartService.CartItemResponse;
+import Timeout.travel_tackle.cart.service.CartService.CartItemResponse;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.FeedbackResponse;
 import Timeout.travel_tackle.trip.dto.ReceivedFeedbackSummary;

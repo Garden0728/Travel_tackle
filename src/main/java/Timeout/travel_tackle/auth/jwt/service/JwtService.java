@@ -1,6 +1,6 @@
-package Timeout.travel_tackle.auth.jwt;
+package Timeout.travel_tackle.auth.jwt.service;
 
-import Timeout.travel_tackle.config.JwtConfig.JwtProperties;
+import Timeout.travel_tackle.auth.jwt.JwtProperties;
 import Timeout.travel_tackle.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
