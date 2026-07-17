@@ -42,7 +42,10 @@ public class TourApiClient {
     }
 
     public TourApiResult getAreas(String areaCode) {
-        return request("areaCode2", builder -> addIfPresent(builder, "areaCode", areaCode));
+        return request("areaCode2", builder -> {
+            addIfPresent(builder, "areaCode", areaCode);
+            builder.queryParam("pageNo", 1).queryParam("numOfRows", 100);
+        });
     }
 
     public TourApiResult getCategories(
