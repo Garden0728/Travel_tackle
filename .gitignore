@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 
 application.yaml
+application.properties
 
 src/main/generated/
 
