@@ -60,6 +60,13 @@ public class DemoFeedSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        if (userRepository.findByEmail("demo.haneul@travel-tackle.local")
+                .map(u -> !tripRepository.findAllByUserOrderByCreatedAtDesc(u).isEmpty())
+                .orElse(false)) {
+            log.info("여행자 피드 시드 데이터가 이미 있어 다시 생성하지 않습니다.");
+            return;
+        }
+
         User seoulUser = user("demo.haneul@travel-tackle.local", "하늘");
         User busanUser = user("demo.bada@travel-tackle.local", "바다");
         User jejuUser = user("demo.gureum@travel-tackle.local", "구름");
