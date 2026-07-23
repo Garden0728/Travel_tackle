@@ -81,7 +81,7 @@ class TripFeedbackServiceTests {
         dayId = detail.days().getFirst().id();
 
         CartItem cart = cartItemRepository.save(
-                new CartItem(owner, "125266", "경포대", "img.jpg", "32", null, null, null));
+                new CartItem(owner, "125266", "경포대", "img.jpg", "32", "12", null, null, null));
         itemId = tripService.addTripItem(owner.getId(), tripId, dayId,
                 new AddTripItemRequest(cart.getId(), null, null)).id();
 

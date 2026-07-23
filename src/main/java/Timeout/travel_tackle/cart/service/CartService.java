@@ -42,6 +42,7 @@ public class CartService {
                 content.title(),
                 content.imageUrl(),
                 content.areaCode(),
+                content.contentTypeId(),
                 content.lclsSystm1(),
                 content.lclsSystm2(),
                 content.lclsSystm3()
@@ -67,7 +68,7 @@ public class CartService {
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
         CartItem cartItem = cartItemRepository.save(
                 new CartItem(user, tourApiContentId, cachedTitle, cachedImageUrl, cachedRegionCode,
-                        null, null, null));
+                        null, null, null, null));
         return CartItemResponse.from(cartItem);
     }
 
@@ -89,6 +90,7 @@ public class CartService {
             String title,
             String imageUrl,
             String areaCode,
+            String contentTypeId,
             LocalDateTime addedAt
     ) {
         private static CartItemResponse from(CartItem item) {
@@ -98,6 +100,7 @@ public class CartService {
                     item.getCachedTitle(),
                     item.getCachedImageUrl(),
                     item.getCachedRegionCode(),
+                    item.getCachedContentTypeId(),
                     item.getAddedAt()
             );
         }

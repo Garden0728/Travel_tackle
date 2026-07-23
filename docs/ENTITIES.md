@@ -90,6 +90,10 @@
 | cachedTitle | cached_title | String | 캐시된 콘텐츠 제목 |
 | cachedImageUrl | cached_image_url | String | 캐시된 이미지 URL |
 | cachedRegionCode | cached_region_code | String | 캐시된 지역 코드 |
+| cachedContentTypeId | cached_content_type_id | String | 캐시된 TourAPI 콘텐츠 타입 (12 관광지, 32 숙박, 39 음식점 등) |
+| cachedLclsSystm1 | cached_lcls_systm1 | String | 캐시된 분류체계 대분류 |
+| cachedLclsSystm2 | cached_lcls_systm2 | String | 캐시된 분류체계 중분류 |
+| cachedLclsSystm3 | cached_lcls_systm3 | String | 캐시된 분류체계 소분류 |
 | addedAt | added_at | LocalDateTime | 장바구니 추가 일시 |
 
 ---
