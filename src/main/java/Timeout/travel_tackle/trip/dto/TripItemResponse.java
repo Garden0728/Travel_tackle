@@ -10,6 +10,8 @@ public record TripItemResponse(
         String tourApiContentId,
         String cachedTitle,
         String cachedImageUrl,
+        String address,
+        String memo,
         LocalTime startTime,
         LocalTime endTime,
         int orderIndex
@@ -20,6 +22,8 @@ public record TripItemResponse(
                 item.getTourApiContentId(),
                 item.getCachedTitle(),
                 item.getCachedImageUrl(),
+                item.getAddress(),
+                item.getMemo(),
                 item.getStartTime(),
                 item.getEndTime(),
                 item.getOrderIndex()

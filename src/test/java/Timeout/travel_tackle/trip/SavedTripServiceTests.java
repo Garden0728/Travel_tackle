@@ -123,7 +123,7 @@ class SavedTripServiceTests {
     @Test
     void deletingTripWithRecordAndSavedReferencesSucceeds() {
         UUID tripId = createPublishedTripWithItems(owner, "A");
-        tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("후기 내용",
+        tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("여행 제목", "후기 내용",
                 List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
         TripSummaryResponse copy = savedTripService.save(viewer.getId(), tripId);
 

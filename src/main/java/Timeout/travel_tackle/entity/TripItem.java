@@ -38,6 +38,12 @@ public class TripItem {
     @Column(name = "region_code")
     private String regionCode; //관광지 지역 코드 (취향 매칭용)
 
+    @Column(name = "address")
+    private String address; //관광지 전체 주소 (지역 라벨 파싱, 상세 표시용)
+
+    @Column(name = "memo")
+    private String memo; //사용자가 남긴 메모
+
     @Column(name = "lcls_systm1")
     private String lclsSystm1; //분류체계 대분류 (취향 매칭용)
 
@@ -60,7 +66,8 @@ public class TripItem {
                     String cachedImageUrl, String regionCode,
                     String lclsSystm1, String lclsSystm2, String lclsSystm3,
                     LocalTime startTime, LocalTime endTime,
-                    int orderIndex) {
+                    int orderIndex,
+                    String address, String memo) {
         validateTime(startTime, endTime);
         validateOrderIndex(orderIndex);
         this.tripDay = tripDay;
@@ -74,6 +81,8 @@ public class TripItem {
         this.startTime = startTime;
         this.endTime = endTime;
         this.orderIndex = orderIndex;
+        this.address = address;
+        this.memo = memo;
     }
 
     public void changeTime(LocalTime startTime, LocalTime endTime) {

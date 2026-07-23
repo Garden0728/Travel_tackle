@@ -12,6 +12,7 @@ import java.util.List;
  * 내용(content)은 필수, 사진(photos)은 최소 1장 필수(여러 장 가능).
  */
 public record TripRecordRequest(
+        @NotBlank @Size(max = 200) String title,
         @NotBlank @Size(max = 2000) String content,
         @NotEmpty @Valid List<PhotoEntry> photos
 ) {

@@ -178,6 +178,23 @@
 
 ---
 
+## TripRecord
+**테이블**: `trip_records`
+**설명**: 계획 기반 여행 기록(후기). 계획당 1개, 내용 필수, 사진 1장 이상(`TripPhoto`)
+
+| 필드 (Java) | 컬럼 (DB) | 타입 | 설명 |
+|---|---|---|---|
+| id | id | UUID (PK) | 고유 식별자 |
+| trip | trip_id | UUID (FK) | 여행 참조 (unique — 계획당 기록 1개) |
+| title | title | String | 기록 제목 |
+| content | content | String | 후기 내용 |
+| createdAt | created_at | LocalDateTime | 작성 일시 |
+
+**연관관계**
+- `TripPhoto` 1:N (has)
+
+---
+
 ## TripItem
 **테이블**: `trip_items`  
 **설명**: 여행 일자에 포함된 개별 일정(장소/활동)
@@ -189,6 +206,8 @@
 | tourApiContentId | tour_api_content_id | String | 투어 API 콘텐츠 ID |
 | cachedTitle | cached_title | String | 캐시된 장소 명칭 |
 | cachedImageUrl | cached_image_url | String | 캐시된 이미지 URL |
+| address | address | String | 캐시된 전체 주소 (지역 라벨 파싱·상세 표시용) |
+| memo | memo | String | 사용자가 남긴 메모 |
 | startTime | start_time | LocalTime | 일정 시작 시간 |
 | endTime | end_time | LocalTime | 일정 종료 시간 |
 | orderIndex | order_index | int | 해당 날짜 내 순서 |

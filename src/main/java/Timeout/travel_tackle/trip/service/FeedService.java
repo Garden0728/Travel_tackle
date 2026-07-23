@@ -1,6 +1,7 @@
 package Timeout.travel_tackle.trip.service;
 
 import Timeout.travel_tackle.entity.Trip;
+import Timeout.travel_tackle.entity.TripRecord;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
@@ -14,14 +15,17 @@ import Timeout.travel_tackle.trip.repository.TripRecordRepository;
 import Timeout.travel_tackle.trip.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +39,9 @@ public class FeedService {
 
     /**
      * 공개된 여행 피드 — 최신순 페이지네이션.
-     * 썸네일은 TripRecord의 첫 사진, feedbackCount는 batch 집계.
+     * Trip 하나당 PLAN 카드 1개는 항상, 기록(TripRecord)이 있으면 RECORD 카드를 추가로 낸다.
+     * 그래서 응답 개수가 요청한 size보다 많을 수 있다 (Trip 1개 -> 최대 2개 항목) — 실사용자 규모가
+     * 커지면 페이지네이션을 다시 손봐야 하는 알려진 한계.
      */
     @Transactional(readOnly = true)
     public Page<FeedItemResponse> getFeed(Pageable pageable) {
@@ -43,10 +49,13 @@ public class FeedService {
         List<UUID> tripIds = trips.getContent().stream().map(Trip::getId).toList();
         Map<UUID, String> thumbnails = resolveThumbnails(trips.getContent());
         Map<UUID, Long> feedbackCounts = resolveFeedbackCounts(tripIds);
-        return trips.map(trip -> FeedItemResponse.of(
-                trip,
-                thumbnails.get(trip.getId()),
-                feedbackCounts.getOrDefault(trip.getId(), 0L)));
+        Map<UUID, TripRecord> records = resolveRecords(tripIds);
+
+        List<FeedItemResponse> items = trips.getContent().stream()
+                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, records).stream())
+                .toList();
+
+        return new PageImpl<>(items, pageable, trips.getTotalElements());
     }
 
     /**
@@ -66,7 +75,41 @@ public class FeedService {
         long feedbackCount = tripFeedbackRepository.countGroupByTripIds(List.of(tripId))
                 .stream().findFirst().map(row -> (Long) row[1]).orElse(0L);
 
-        return PublicTripDetailResponse.of(trip, detail.days(), record, feedbackCount);
+        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount);
+    }
+
+    private List<FeedItemResponse> buildFeedItems(
+            Trip trip, Map<UUID, String> thumbnails, Map<UUID, Long> feedbackCounts, Map<UUID, TripRecord> records
+    ) {
+        String thumbnailUrl = thumbnails.get(trip.getId());
+        long feedbackCount = feedbackCounts.getOrDefault(trip.getId(), 0L);
+        TripDetailResponse detail = tripQueryRepository.findDetail(trip);
+        String region = resolveRegion(detail);
+
+        List<FeedItemResponse> items = new ArrayList<>();
+        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, region, detail.days()));
+
+        TripRecord record = records.get(trip.getId());
+        if (record != null) {
+            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, region));
+        }
+        return items;
+    }
+
+    private String resolveRegion(TripDetailResponse detail) {
+        return detail.days().stream()
+                .flatMap(day -> day.items().stream())
+                .findFirst()
+                .map(item -> RegionLabelResolver.fromAddress(item.address()))
+                .orElse(null);
+    }
+
+    private Map<UUID, TripRecord> resolveRecords(List<UUID> tripIds) {
+        if (tripIds.isEmpty()) {
+            return Map.of();
+        }
+        return tripRecordRepository.findPublishedByTripIdInWithTripAndUser(tripIds).stream()
+                .collect(Collectors.toMap(r -> r.getTrip().getId(), r -> r));
     }
 
     private Map<UUID, String> resolveThumbnails(List<Trip> trips) {

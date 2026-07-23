@@ -34,7 +34,7 @@ public class TripRecordService {
         if (tripRecordRepository.existsByTrip(trip)) {
             throw new CustomException(ErrorCode.TRIP_RECORD_ALREADY_EXISTS);
         }
-        TripRecord record = tripRecordRepository.save(new TripRecord(trip, request.content()));
+        TripRecord record = tripRecordRepository.save(new TripRecord(trip, request.title(), request.content()));
         savePhotos(record, request);
         return buildResponse(record);
     }
@@ -50,6 +50,7 @@ public class TripRecordService {
     public TripRecordResponse updateRecord(UUID userId, UUID tripId, TripRecordRequest request) {
         Trip trip = findTripOwnedBy(userId, tripId);
         TripRecord record = findRecordOf(trip);
+        record.updateTitle(request.title());
         record.updateContent(request.content());
         // 사진은 전체 교체
         tripPhotoRepository.deleteAllByRecord(record);

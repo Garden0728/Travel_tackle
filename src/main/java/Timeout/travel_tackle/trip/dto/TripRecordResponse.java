@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public record TripRecordResponse(
         UUID id,
+        String title,
         String content,
         LocalDateTime createdAt,
         List<TripPhotoResponse> photos
@@ -16,6 +17,7 @@ public record TripRecordResponse(
     public static TripRecordResponse of(TripRecord record, List<TripPhoto> photos) {
         return new TripRecordResponse(
                 record.getId(),
+                record.getTitle(),
                 record.getContent(),
                 record.getCreatedAt(),
                 photos.stream().map(TripPhotoResponse::from).toList()
