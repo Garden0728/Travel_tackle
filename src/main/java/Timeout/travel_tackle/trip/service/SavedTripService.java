@@ -97,7 +97,9 @@ public class SavedTripService {
                             item.getLclsSystm3(),
                             item.getStartTime(),
                             item.getEndTime(),
-                            item.getOrderIndex()))
+                            item.getOrderIndex(),
+                            item.getAddress(),
+                            item.getMemo()))
                     .toList();
             tripItemRepository.saveAll(copiedItems);
         }

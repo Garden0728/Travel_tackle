@@ -11,6 +11,7 @@ import java.util.UUID;
 public record PublicTripDetailResponse(
         UUID id,
         String title,
+        String region,
         LocalDate startDate,
         LocalDate endDate,
         TripStatus status,
@@ -22,6 +23,7 @@ public record PublicTripDetailResponse(
 ) {
     public static PublicTripDetailResponse of(
             Trip trip,
+            String region,
             List<TripDayResponse> days,
             TripRecordResponse record,
             long feedbackCount
@@ -29,6 +31,7 @@ public record PublicTripDetailResponse(
         return new PublicTripDetailResponse(
                 trip.getId(),
                 trip.getTitle(),
+                region,
                 trip.getStartDate(),
                 trip.getEndDate(),
                 trip.getStatus(),

@@ -117,7 +117,7 @@ public class TripService {
         TripItem item = new TripItem(day, cartItem.getTourApiContentId(), cartItem.getCachedTitle(),
                 cartItem.getCachedImageUrl(), cartItem.getCachedRegionCode(),
                 cartItem.getCachedLclsSystm1(), cartItem.getCachedLclsSystm2(), cartItem.getCachedLclsSystm3(),
-                request.startTime(), request.endTime(), nextIndex);
+                request.startTime(), request.endTime(), nextIndex, null, null);
         tripItemRepository.save(item);
         return TripItemResponse.from(item);
     }

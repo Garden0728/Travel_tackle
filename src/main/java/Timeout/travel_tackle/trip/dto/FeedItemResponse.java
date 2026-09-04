@@ -2,33 +2,65 @@ package Timeout.travel_tackle.trip.dto;
 
 import Timeout.travel_tackle.entity.Enum.TripStatus;
 import Timeout.travel_tackle.entity.Trip;
+import Timeout.travel_tackle.entity.TripRecord;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record FeedItemResponse(
         UUID tripId,
+        FeedItemType type,
         String title,
+        String content,
+        String region,
         LocalDate startDate,
         LocalDate endDate,
         TripStatus status,
         String ownerName,
         String thumbnailUrl,
         long feedbackCount,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<TripDayResponse> days
 ) {
-    public static FeedItemResponse of(Trip trip, String thumbnailUrl, long feedbackCount) {
+    public static FeedItemResponse ofPlan(
+            Trip trip, String thumbnailUrl, long feedbackCount, String region, List<TripDayResponse> days
+    ) {
         return new FeedItemResponse(
                 trip.getId(),
+                FeedItemType.PLAN,
                 trip.getTitle(),
+                null,
+                region,
                 trip.getStartDate(),
                 trip.getEndDate(),
                 trip.getStatus(),
                 trip.getUser().getName(),
                 thumbnailUrl,
                 feedbackCount,
-                trip.getCreatedAt()
+                trip.getCreatedAt(),
+                days
+        );
+    }
+
+    public static FeedItemResponse ofRecord(
+            Trip trip, TripRecord record, String thumbnailUrl, long feedbackCount, String region
+    ) {
+        return new FeedItemResponse(
+                trip.getId(),
+                FeedItemType.RECORD,
+                record.getTitle(),
+                record.getContent(),
+                region,
+                trip.getStartDate(),
+                trip.getEndDate(),
+                trip.getStatus(),
+                trip.getUser().getName(),
+                thumbnailUrl,
+                feedbackCount,
+                record.getCreatedAt(),
+                null
         );
     }
 }

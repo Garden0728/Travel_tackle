@@ -25,6 +25,9 @@ public class TripRecord { // 계획 기반 여행 기록(후기). 내용 필수,
     @JoinColumn(name = "trip_id", nullable = false)
     private Trip trip;
 
+    @Column(nullable = false)
+    private String title; // 기록 제목(필수)
+
     @Column(nullable = false, length = 2000)
     private String content; // 후기 내용(필수)
 
@@ -32,9 +35,14 @@ public class TripRecord { // 계획 기반 여행 기록(후기). 내용 필수,
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public TripRecord(Trip trip, String content) {
+    public TripRecord(Trip trip, String title, String content) {
         this.trip = trip;
+        this.title = title;
         this.content = content;
+    }
+
+    public void updateTitle(String title) {
+        this.title = title;
     }
 
     public void updateContent(String content) {

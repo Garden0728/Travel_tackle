@@ -46,7 +46,7 @@ class TripRecordServiceTests {
         UUID tripId = createTrip();
 
         TripRecordResponse record = tripRecordService.createRecord(owner.getId(), tripId,
-                new TripRecordRequest("정말 좋았던 여행",
+                new TripRecordRequest("여행 제목", "정말 좋았던 여행",
                         List.of(new PhotoEntry("https://cdn.test/a.jpg", "첫날"),
                                 new PhotoEntry("https://cdn.test/b.jpg", null))));
 
@@ -94,12 +94,12 @@ class TripRecordServiceTests {
     void updateReplacesContentAndPhotos() {
         UUID tripId = createTrip();
         tripRecordService.createRecord(owner.getId(), tripId,
-                new TripRecordRequest("처음",
+                new TripRecordRequest("여행 제목", "처음",
                         List.of(new PhotoEntry("https://cdn.test/a.jpg", null),
                                 new PhotoEntry("https://cdn.test/b.jpg", null))));
 
         TripRecordResponse updated = tripRecordService.updateRecord(owner.getId(), tripId,
-                new TripRecordRequest("수정됨",
+                new TripRecordRequest("여행 제목", "수정됨",
                         List.of(new PhotoEntry("https://cdn.test/c.jpg", "새 사진"))));
 
         assertEquals("수정됨", updated.content());
@@ -120,7 +120,7 @@ class TripRecordServiceTests {
     }
 
     private TripRecordRequest onePhotoRecord(String content) {
-        return new TripRecordRequest(content, List.of(new PhotoEntry("https://cdn.test/x.jpg", null)));
+        return new TripRecordRequest("여행 제목", content, List.of(new PhotoEntry("https://cdn.test/x.jpg", null)));
     }
 
     private UUID createTrip() {
