@@ -1,5 +1,7 @@
 package Timeout.travel_tackle.tour.controller;
 
+import Timeout.travel_tackle.global.exception.CustomException;
+import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.tour.dto.RecommendationDtos.RecommendationsResponse;
 import Timeout.travel_tackle.tour.dto.TourDtos.Area;
 import Timeout.travel_tackle.tour.dto.TourDtos.Category;
@@ -36,6 +38,10 @@ public class TourController {
     @GetMapping("/recommended")
     @Operation(summary = "선호도 기반 섹션 추천")
     public RecommendationsResponse getRecommendations(@AuthenticationPrincipal Jwt jwt) {
+        // GET /api/tour/** is permitAll, so unauthenticated requests reach here with a null principal.
+        if (jwt == null) {
+            throw new CustomException(ErrorCode.UNAUTHENTICATED);
+        }
         return recommendationService.getRecommendations(jwt.getSubject());
     }
 
