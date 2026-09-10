@@ -5,9 +5,11 @@ import Timeout.travel_tackle.entity.TripRecord;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
+import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.PublicTripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripRecordResponse;
+import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripFeedbackRepository;
 import Timeout.travel_tackle.trip.repository.TripPhotoRepository;
 import Timeout.travel_tackle.trip.repository.TripQueryRepository;
@@ -36,23 +38,27 @@ public class FeedService {
     private final TripPhotoRepository tripPhotoRepository;
     private final TripQueryRepository tripQueryRepository;
     private final TripFeedbackRepository tripFeedbackRepository;
+    private final SavedTripRepository savedTripRepository;
 
     /**
-     * 공개된 여행 피드 — 최신순 페이지네이션.
+     * 공개된 여행 피드 — 최신순(LATEST) 또는 참견 수순(POPULAR) 페이지네이션.
      * Trip 하나당 PLAN 카드 1개는 항상, 기록(TripRecord)이 있으면 RECORD 카드를 추가로 낸다.
      * 그래서 응답 개수가 요청한 size보다 많을 수 있다 (Trip 1개 -> 최대 2개 항목) — 실사용자 규모가
      * 커지면 페이지네이션을 다시 손봐야 하는 알려진 한계.
      */
     @Transactional(readOnly = true)
-    public Page<FeedItemResponse> getFeed(Pageable pageable) {
-        Page<Trip> trips = tripRepository.findPublishedWithUser(pageable);
+    public Page<FeedItemResponse> getFeed(Pageable pageable, FeedSort sort) {
+        Page<Trip> trips = sort == FeedSort.POPULAR
+                ? tripRepository.findPublishedWithUserOrderByFeedbackCount(pageable)
+                : tripRepository.findPublishedWithUser(pageable);
         List<UUID> tripIds = trips.getContent().stream().map(Trip::getId).toList();
         Map<UUID, String> thumbnails = resolveThumbnails(trips.getContent());
         Map<UUID, Long> feedbackCounts = resolveFeedbackCounts(tripIds);
+        Map<UUID, Long> saveCounts = resolveSaveCounts(tripIds);
         Map<UUID, TripRecord> records = resolveRecords(tripIds);
 
         List<FeedItemResponse> items = trips.getContent().stream()
-                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, records).stream())
+                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, saveCounts, records).stream())
                 .toList();
 
         return new PageImpl<>(items, pageable, trips.getTotalElements());
@@ -79,19 +85,21 @@ public class FeedService {
     }
 
     private List<FeedItemResponse> buildFeedItems(
-            Trip trip, Map<UUID, String> thumbnails, Map<UUID, Long> feedbackCounts, Map<UUID, TripRecord> records
+            Trip trip, Map<UUID, String> thumbnails, Map<UUID, Long> feedbackCounts,
+            Map<UUID, Long> saveCounts, Map<UUID, TripRecord> records
     ) {
         String thumbnailUrl = thumbnails.get(trip.getId());
         long feedbackCount = feedbackCounts.getOrDefault(trip.getId(), 0L);
+        long saveCount = saveCounts.getOrDefault(trip.getId(), 0L);
         TripDetailResponse detail = tripQueryRepository.findDetail(trip);
         String region = resolveRegion(detail);
 
         List<FeedItemResponse> items = new ArrayList<>();
-        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, region, detail.days()));
+        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, saveCount, region, detail.days()));
 
         TripRecord record = records.get(trip.getId());
         if (record != null) {
-            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, region));
+            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, saveCount, region));
         }
         return items;
     }
@@ -122,6 +130,17 @@ public class FeedService {
             thumbnails.putIfAbsent((UUID) row[0], (String) row[1]);
         }
         return thumbnails;
+    }
+
+    private Map<UUID, Long> resolveSaveCounts(List<UUID> tripIds) {
+        if (tripIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, Long> counts = new HashMap<>();
+        for (Object[] row : savedTripRepository.countGroupByOriginalTripIds(tripIds)) {
+            counts.put((UUID) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     private Map<UUID, Long> resolveFeedbackCounts(List<UUID> tripIds) {

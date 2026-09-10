@@ -21,4 +21,8 @@ public interface SavedTripRepository extends JpaRepository<SavedTrip, UUID> {
     @Query("select s from SavedTrip s join fetch s.originalTrip t join fetch t.user "
             + "where s.user = :user order by s.savedAt desc")
     List<SavedTrip> findAllWithOriginalByUser(@Param("user") User user);
+
+    @Query("select s.originalTrip.id, count(s) from SavedTrip s "
+            + "where s.originalTrip.id in :tripIds group by s.originalTrip.id")
+    List<Object[]> countGroupByOriginalTripIds(@Param("tripIds") List<UUID> tripIds);
 }
