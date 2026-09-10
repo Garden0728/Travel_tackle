@@ -115,7 +115,7 @@ public class TripService {
         List<TripItem> existing = tripItemRepository.findAllByTripDayOrderByOrderIndex(day);
         int nextIndex = existing.isEmpty() ? 0 : existing.get(existing.size() - 1).getOrderIndex() + 1;
         TripItem item = new TripItem(day, cartItem.getTourApiContentId(), cartItem.getCachedTitle(),
-                cartItem.getCachedImageUrl(), cartItem.getCachedRegionCode(),
+                cartItem.getCachedImageUrl(), cartItem.getCachedRegionCode(), cartItem.getCachedContentTypeId(),
                 cartItem.getCachedLclsSystm1(), cartItem.getCachedLclsSystm2(), cartItem.getCachedLclsSystm3(),
                 request.startTime(), request.endTime(), nextIndex, null, null);
         tripItemRepository.save(item);
@@ -129,6 +129,9 @@ public class TripService {
         TripDay day = findDayInTrip(dayId, trip);
         TripItem item = findItemInDay(itemId, day);
         item.changeTime(request.startTime(), request.endTime());
+        if (request.memo() != null) {
+            item.changeMemo(request.memo());
+        }
         return TripItemResponse.from(item);
     }
 

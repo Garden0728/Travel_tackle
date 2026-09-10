@@ -13,6 +13,7 @@ import Timeout.travel_tackle.trip.dto.ReorderTripItemsRequest;
 import Timeout.travel_tackle.trip.dto.TripDayResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripItemResponse;
+import Timeout.travel_tackle.trip.dto.UpdateTripItemRequest;
 import Timeout.travel_tackle.trip.service.TripService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,6 +103,36 @@ class TripServiceTests {
         TripDetailResponse result = tripService.getTripDetail(userId, trip.id());
         assertItems(result.days().get(0).items(), List.of("A"));
         assertItems(result.days().get(1).items(), List.of("B", "C", "D"));
+    }
+
+    @Test
+    void timeOnlyUpdateDoesNotWipeExistingMemo() {
+        TripDetailResponse trip = createTripWithDays(1);
+        TripDayResponse day = trip.days().getFirst();
+        TripItemResponse item = addItem(trip.id(), day.id(), "1");
+
+        tripService.updateTripItem(userId, trip.id(), day.id(), item.id(),
+                new UpdateTripItemRequest(null, null, "여기 꼭 가기"));
+
+        TripItemResponse afterTimeOnlyUpdate = tripService.updateTripItem(userId, trip.id(), day.id(), item.id(),
+                new UpdateTripItemRequest(java.time.LocalTime.of(10, 0), java.time.LocalTime.of(11, 0), null));
+
+        assertEquals("여기 꼭 가기", afterTimeOnlyUpdate.memo());
+    }
+
+    @Test
+    void explicitEmptyMemoClearsIt() {
+        TripDetailResponse trip = createTripWithDays(1);
+        TripDayResponse day = trip.days().getFirst();
+        TripItemResponse item = addItem(trip.id(), day.id(), "1");
+
+        tripService.updateTripItem(userId, trip.id(), day.id(), item.id(),
+                new UpdateTripItemRequest(null, null, "여기 꼭 가기"));
+
+        TripItemResponse cleared = tripService.updateTripItem(userId, trip.id(), day.id(), item.id(),
+                new UpdateTripItemRequest(null, null, ""));
+
+        assertEquals("", cleared.memo());
     }
 
     private TripDetailResponse createTripWithDays(int dayCount) {
