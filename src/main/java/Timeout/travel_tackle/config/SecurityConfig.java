@@ -14,6 +14,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
@@ -28,7 +29,8 @@ public class SecurityConfig {
             ObjectProvider<ClientRegistrationRepository> clientRegistrations,
             SignedCookieOAuth2AuthorizationRequestRepository authorizationRequestRepository,
             SocialOAuthSuccessHandler socialOAuthSuccessHandler,
-            SocialOAuthFailureHandler socialOAuthFailureHandler
+            SocialOAuthFailureHandler socialOAuthFailureHandler,
+            ApiAuthenticationEntryPoint apiAuthenticationEntryPoint
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -62,8 +64,14 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                // oauth2Login 이 등록하는 로그인 리다이렉트보다 먼저 매칭되도록 API 경로 진입점을 앞에 둔다
+                .exceptionHandling(exceptions -> exceptions
+                        .defaultAuthenticationEntryPointFor(apiAuthenticationEntryPoint,
+                                PathPatternRequestMatcher.withDefaults().matcher("/api/**"))
+                )
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .bearerTokenResolver(bearerTokenResolver)
+                        .authenticationEntryPoint(apiAuthenticationEntryPoint)
                         .jwt(Customizer.withDefaults())
                 );
 

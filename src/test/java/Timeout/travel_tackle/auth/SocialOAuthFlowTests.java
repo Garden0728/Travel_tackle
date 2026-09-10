@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -20,6 +22,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -51,6 +55,20 @@ class SocialOAuthFlowTests {
         assertNotNull(authorizationCookie);
         assertTrue(authorizationCookie.isHttpOnly());
         assertNull(result.getResponse().getCookie("JSESSIONID"));
+    }
+
+    @Test
+    void unauthenticatedApiRequestReturns401JsonInsteadOfLoginRedirect() throws Exception {
+        // axios 기본 Accept 헤더 — 이 조합이 oauth2Login 의 로그인 리다이렉트 매처에 걸려 302 가 났었다
+        mockMvc.perform(get("/api/auth/me")
+                        .header(HttpHeaders.ACCEPT, "application/json, text/plain, */*"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("AUTH_013"));
+
+        mockMvc.perform(get("/api/trips").header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
     }
 
     @Test

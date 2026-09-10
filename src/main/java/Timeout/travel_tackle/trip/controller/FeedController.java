@@ -1,6 +1,7 @@
 package Timeout.travel_tackle.trip.controller;
 
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
+import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.PublicTripDetailResponse;
 import Timeout.travel_tackle.trip.service.FeedService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,15 +31,19 @@ public class FeedController {
     private final FeedService feedService;
 
     @GetMapping
-    @Operation(summary = "공개 여행 피드 조회 (최신순 페이지네이션)")
+    @Operation(summary = "공개 여행 피드 조회 (페이지네이션, sort=latest|popular)")
     public ResponseEntity<Page<FeedItemResponse>> getFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "latest") String sort
     ) {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
-        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return ResponseEntity.ok(feedService.getFeed(pageable));
+        FeedSort feedSort = FeedSort.from(sort);
+        Pageable pageable = feedSort == FeedSort.LATEST
+                ? PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"))
+                : PageRequest.of(safePage, safeSize);
+        return ResponseEntity.ok(feedService.getFeed(pageable, feedSort));
     }
 
     @GetMapping("/{tripId}")

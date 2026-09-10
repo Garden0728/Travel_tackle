@@ -23,6 +23,12 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
             countQuery = "select count(t) from Trip t where t.published = true")
     Page<Trip> findPublishedWithUser(Pageable pageable);
 
+    // 참견(TripFeedback) 수 내림차순, 동점은 최신순 — 정렬이 쿼리에 고정되므로 pageable 은 unsorted 로 넘긴다
+    @Query(value = "select t from Trip t join fetch t.user where t.published = true "
+            + "order by (select count(f) from TripFeedback f where f.trip = t) desc, t.createdAt desc",
+            countQuery = "select count(t) from Trip t where t.published = true")
+    Page<Trip> findPublishedWithUserOrderByFeedbackCount(Pageable pageable);
+
     @Query("select t from Trip t join fetch t.user where t.id = :id and t.published = true")
     Optional<Trip> findPublishedDetailById(@Param("id") UUID id);
 }
