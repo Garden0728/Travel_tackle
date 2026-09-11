@@ -152,7 +152,7 @@ public class DemoFeedSeeder implements CommandLineRunner {
                 TripItem item = new TripItem(
                         day, place.contentId(), place.title(),
                         place.imageUrl(),
-                        areaCode, null, null, null,
+                        areaCode, ATTRACTION_CONTENT_TYPE_ID, null, null, null,
                         startTime, startTime.plusHours(1), slot,
                         place.address(), "직접 남긴 메모예요.");
                 tripItemRepository.save(item);

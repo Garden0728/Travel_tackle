@@ -4,5 +4,6 @@ import java.time.LocalTime;
 
 public record UpdateTripItemRequest(
         LocalTime startTime,
-        LocalTime endTime
+        LocalTime endTime,
+        String memo
 ) {}

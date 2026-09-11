@@ -92,6 +92,7 @@ public class SavedTripService {
                             item.getCachedTitle(),
                             item.getCachedImageUrl(),
                             item.getRegionCode(),
+                            item.getContentTypeId(),
                             item.getLclsSystm1(),
                             item.getLclsSystm2(),
                             item.getLclsSystm3(),
