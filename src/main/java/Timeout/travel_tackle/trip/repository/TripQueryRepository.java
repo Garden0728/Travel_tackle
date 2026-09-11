@@ -1,18 +1,29 @@
 package Timeout.travel_tackle.trip.repository;
 
+import Timeout.travel_tackle.entity.QTrip;
 import Timeout.travel_tackle.entity.QTripDay;
 import Timeout.travel_tackle.entity.QTripFeedback;
 import Timeout.travel_tackle.entity.QTripFeedbackRecommendation;
 import Timeout.travel_tackle.entity.QTripItem;
+import Timeout.travel_tackle.entity.QTripRecord;
+import Timeout.travel_tackle.entity.QUser;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
 import Timeout.travel_tackle.entity.TripItem;
+import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.TripDayResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripItemResponse;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -58,6 +69,66 @@ public class TripQueryRepository {
                 .toList();
 
         return TripDetailResponse.of(trip, dayResponses);
+    }
+
+    /**
+     * 공개 피드 키워드 검색 — 계획 제목(Trip.title), 기록 제목/내용(TripRecord),
+     * 또는 계획에 담긴 각 장소 이름(TripItem.cachedTitle)에 매칭되는 Trip을 조회.
+     * RELEVANCE 정렬: 제목매치(랭크 3) > 기록매치(랭크 2) > 장소이름매치(랭크 1), 동점은 최신순.
+     * POPULAR로 검색할 땐 참견 수 서브쿼리 정렬이 부정확해지므로 RELEVANCE로 대체한다.
+     */
+    public Page<Trip> searchPublishedTrips(String keyword, FeedSort sort, Pageable pageable) {
+        QTrip qTrip = QTrip.trip;
+        QTripRecord qRecord = QTripRecord.tripRecord;
+        QUser qUser = QUser.user;
+        QTripDay qSearchDay = new QTripDay("qSearchDay");
+        QTripItem qSearchItem = new QTripItem("qSearchItem");
+
+        String pattern = "%" + keyword.toLowerCase() + "%";
+
+        BooleanExpression titleMatch = qTrip.title.lower().like(pattern);
+        BooleanExpression recordMatch = JPAExpressions.selectOne()
+                .from(qRecord)
+                .where(qRecord.trip.eq(qTrip)
+                        .and(qRecord.title.lower().like(pattern)
+                                .or(qRecord.content.lower().like(pattern))))
+                .exists();
+        BooleanExpression itemMatch = JPAExpressions.selectOne()
+                .from(qSearchItem)
+                .join(qSearchItem.tripDay, qSearchDay)
+                .where(qSearchDay.trip.eq(qTrip)
+                        .and(qSearchItem.cachedTitle.lower().like(pattern)))
+                .exists();
+        BooleanExpression matched = titleMatch.or(recordMatch).or(itemMatch);
+
+        NumberExpression<Integer> rank = new CaseBuilder()
+                .when(titleMatch).then(3)
+                .when(recordMatch).then(2)
+                .when(itemMatch).then(1)
+                .otherwise(0);
+
+        OrderSpecifier<?>[] orderSpecifiers = switch (sort) {
+            case OLDEST -> new OrderSpecifier<?>[]{qTrip.createdAt.asc()};
+            case LATEST -> new OrderSpecifier<?>[]{qTrip.createdAt.desc()};
+            default -> new OrderSpecifier<?>[]{rank.desc(), qTrip.createdAt.desc()}; // RELEVANCE, POPULAR
+        };
+
+        List<Trip> content = queryFactory
+                .selectFrom(qTrip)
+                .join(qTrip.user, qUser).fetchJoin()
+                .where(qTrip.published.isTrue(), matched)
+                .orderBy(orderSpecifiers)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long total = queryFactory
+                .select(qTrip.count())
+                .from(qTrip)
+                .where(qTrip.published.isTrue(), matched)
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total == null ? 0 : total);
     }
 
     /**

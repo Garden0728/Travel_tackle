@@ -1,14 +1,18 @@
 package Timeout.travel_tackle.trip;
 
 import Timeout.travel_tackle.auth.repository.UserRepository;
+import Timeout.travel_tackle.cart.repository.CartItemRepository;
+import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
+import Timeout.travel_tackle.trip.dto.AddTripItemRequest;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
 import Timeout.travel_tackle.trip.dto.FeedItemType;
 import Timeout.travel_tackle.trip.dto.FeedSort;
+import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripRecordRequest;
 import Timeout.travel_tackle.trip.service.FeedService;
 import Timeout.travel_tackle.trip.service.SavedTripService;
@@ -42,6 +46,7 @@ class FeedServiceTests {
     @Autowired TripRecordService tripRecordService;
     @Autowired SavedTripService savedTripService;
     @Autowired UserRepository userRepository;
+    @Autowired CartItemRepository cartItemRepository;
     @Autowired EntityManager entityManager;
 
     private User owner;
@@ -115,11 +120,109 @@ class FeedServiceTests {
         assertEquals(ErrorCode.INVALID_INPUT, ex.getErrorCode());
         assertEquals(FeedSort.POPULAR, FeedSort.from("popular"));
         assertEquals(FeedSort.LATEST, FeedSort.from("LATEST"));
+        assertEquals(FeedSort.OLDEST, FeedSort.from("oldest"));
+        assertEquals(FeedSort.RELEVANCE, FeedSort.from("relevance"));
+    }
+
+    @Test
+    void keywordSearchMatchesTripTitleOrRecordContent() {
+        UUID titleMatch = createPublishedTrip("부산 여행");
+        UUID contentOnlyMatch = createPublishedTrip("아무 여행");
+        tripRecordService.createRecord(owner.getId(), contentOnlyMatch,
+                new TripRecordRequest("기록", "부산 맛집 다녀왔어요",
+                        List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+        createPublishedTrip("서울 여행"); // 매칭 안 됨
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<UUID> matchedTripIds = feedService.getFeed(PageRequest.of(0, 10), FeedSort.RELEVANCE, "부산")
+                .getContent().stream().map(FeedItemResponse::tripId).distinct().toList();
+
+        assertEquals(List.of(titleMatch, contentOnlyMatch), matchedTripIds);
+    }
+
+    @Test
+    void relevanceSortRanksTitleMatchAboveContentOnlyMatch() {
+        UUID contentOnlyMatch = createPublishedTrip("아무 여행");
+        tripRecordService.createRecord(owner.getId(), contentOnlyMatch,
+                new TripRecordRequest("기록", "제주 맛집 다녀왔어요",
+                        List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+        UUID titleMatch = createPublishedTrip("제주 여행");
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<UUID> order = feedService.getFeed(PageRequest.of(0, 10), FeedSort.RELEVANCE, "제주")
+                .getContent().stream().map(FeedItemResponse::tripId).distinct().toList();
+
+        assertEquals(List.of(titleMatch, contentOnlyMatch), order);
+    }
+
+    @Test
+    void blankKeywordWithRelevanceSortFallsBackToPageableOrder() {
+        // 컨트롤러가 keyword 없는 relevance 요청을 latest로 정규화해 정렬된 Pageable을 넘기는 것과 동일한 상황을 재현
+        UUID first = createPublishedTrip("첫 번째");
+        UUID second = createPublishedTrip("두 번째");
+        entityManager.flush();
+        entityManager.clear();
+
+        List<UUID> order = feedService.getFeed(
+                        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")), FeedSort.RELEVANCE, "  ")
+                .getContent().stream().map(FeedItemResponse::tripId).distinct().toList();
+
+        assertEquals(List.of(second, first), order);
+    }
+
+    @Test
+    void itemTitleMatchRanksBelowTripAndRecordMatch() {
+        UUID itemOnlyMatch = createPublishedTripWithItem("아무 여행", "해운대 해수욕장");
+        UUID recordMatch = createPublishedTrip("아무 여행2");
+        tripRecordService.createRecord(owner.getId(), recordMatch,
+                new TripRecordRequest("기록", "해운대에서 놀았어요",
+                        List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+        UUID titleMatch = createPublishedTrip("해운대 여행");
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<UUID> order = feedService.getFeed(PageRequest.of(0, 10), FeedSort.RELEVANCE, "해운대")
+                .getContent().stream().map(FeedItemResponse::tripId).distinct().toList();
+
+        assertEquals(List.of(titleMatch, recordMatch, itemOnlyMatch), order);
+    }
+
+    @Test
+    void oldestSortIsAscendingByCreatedAt() {
+        UUID first = createPublishedTrip("첫 번째");
+        UUID second = createPublishedTrip("두 번째");
+        entityManager.flush();
+        entityManager.clear();
+
+        Page<FeedItemResponse> feed = feedService.getFeed(
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "createdAt")), FeedSort.OLDEST);
+
+        assertEquals(List.of(first, second),
+                feed.getContent().stream().map(FeedItemResponse::tripId).toList());
     }
 
     private UUID createPublishedTrip(String title) {
         LocalDate date = LocalDate.of(2026, 7, 1);
         UUID tripId = tripService.createTrip(owner.getId(), new CreateTripRequest(title, date, date)).id();
+        tripService.publishTrip(owner.getId(), tripId);
+        entityManager.flush();
+        return tripId;
+    }
+
+    private UUID createPublishedTripWithItem(String title, String placeName) {
+        LocalDate date = LocalDate.of(2026, 7, 1);
+        UUID tripId = tripService.createTrip(owner.getId(), new CreateTripRequest(title, date, date)).id();
+        TripDetailResponse detail = tripService.getTripDetail(owner.getId(), tripId);
+        UUID dayId = detail.days().getFirst().id();
+        CartItem cartItem = cartItemRepository.save(
+                new CartItem(owner, "item-" + placeName, placeName, null, "1", null, null, null, null));
+        tripService.addTripItem(owner.getId(), tripId, dayId,
+                new AddTripItemRequest(cartItem.getId(), null, null));
         tripService.publishTrip(owner.getId(), tripId);
         entityManager.flush();
         return tripId;
