@@ -38,6 +38,9 @@ public class TripItem {
     @Column(name = "region_code")
     private String regionCode; //관광지 지역 코드 (취향 매칭용)
 
+    @Column(name = "content_type_id")
+    private String contentTypeId; //TourAPI 콘텐츠 타입 (12 관광지, 32 숙박, 39 음식점 등, 카테고리 아이콘/색 매칭용)
+
     @Column(name = "address")
     private String address; //관광지 전체 주소 (지역 라벨 파싱, 상세 표시용)
 
@@ -63,7 +66,7 @@ public class TripItem {
     private int orderIndex; //관고아 방문 순서
 
     public TripItem(TripDay tripDay, String tourApiContentId, String cachedTitle,
-                    String cachedImageUrl, String regionCode,
+                    String cachedImageUrl, String regionCode, String contentTypeId,
                     String lclsSystm1, String lclsSystm2, String lclsSystm3,
                     LocalTime startTime, LocalTime endTime,
                     int orderIndex,
@@ -75,6 +78,7 @@ public class TripItem {
         this.cachedTitle = cachedTitle;
         this.cachedImageUrl = cachedImageUrl;
         this.regionCode = regionCode;
+        this.contentTypeId = contentTypeId;
         this.lclsSystm1 = lclsSystm1;
         this.lclsSystm2 = lclsSystm2;
         this.lclsSystm3 = lclsSystm3;
@@ -89,6 +93,10 @@ public class TripItem {
         validateTime(startTime, endTime);
         this.startTime = startTime;
         this.endTime = endTime;
+    }
+
+    public void changeMemo(String memo) {
+        this.memo = memo;
     }
 
     public void changeOrder(int orderIndex) {
