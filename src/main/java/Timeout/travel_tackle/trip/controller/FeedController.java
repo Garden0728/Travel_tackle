@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
@@ -31,19 +32,33 @@ public class FeedController {
     private final FeedService feedService;
 
     @GetMapping
-    @Operation(summary = "공개 여행 피드 조회 (페이지네이션, sort=latest|popular)")
+    @Operation(summary = "공개 여행 피드 조회 (페이지네이션, keyword로 계획/기록 검색, sort=latest|oldest|popular|relevance)")
     public ResponseEntity<Page<FeedItemResponse>> getFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "latest") String sort
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(required = false) String keyword
     ) {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
+        boolean hasKeyword = StringUtils.hasText(keyword);
         FeedSort feedSort = FeedSort.from(sort);
-        Pageable pageable = feedSort == FeedSort.LATEST
-                ? PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"))
-                : PageRequest.of(safePage, safeSize);
-        return ResponseEntity.ok(feedService.getFeed(pageable, feedSort));
+        if (feedSort == FeedSort.RELEVANCE && !hasKeyword) {
+            feedSort = FeedSort.LATEST; // 키워드 없이 relevance 요청 시 최신순으로 대체
+        }
+
+        Pageable pageable;
+        if (hasKeyword) {
+            pageable = PageRequest.of(safePage, safeSize); // 정렬은 QueryDSL 쿼리 안에서 처리
+        } else if (feedSort == FeedSort.OLDEST) {
+            pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.ASC, "createdAt"));
+        } else if (feedSort == FeedSort.LATEST) {
+            pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else {
+            pageable = PageRequest.of(safePage, safeSize);
+        }
+
+        return ResponseEntity.ok(feedService.getFeed(pageable, feedSort, keyword));
     }
 
     @GetMapping("/{tripId}")

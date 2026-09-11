@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,9 +49,19 @@ public class FeedService {
      */
     @Transactional(readOnly = true)
     public Page<FeedItemResponse> getFeed(Pageable pageable, FeedSort sort) {
-        Page<Trip> trips = sort == FeedSort.POPULAR
-                ? tripRepository.findPublishedWithUserOrderByFeedbackCount(pageable)
-                : tripRepository.findPublishedWithUser(pageable);
+        return getFeed(pageable, sort, null);
+    }
+
+    /**
+     * keyword가 있으면 계획 제목/기록 제목·내용을 검색한 결과를 sort(RELEVANCE 기본)로 정렬해 반환한다.
+     */
+    @Transactional(readOnly = true)
+    public Page<FeedItemResponse> getFeed(Pageable pageable, FeedSort sort, String keyword) {
+        Page<Trip> trips = StringUtils.hasText(keyword)
+                ? tripQueryRepository.searchPublishedTrips(keyword.trim(), sort, pageable)
+                : (sort == FeedSort.POPULAR
+                        ? tripRepository.findPublishedWithUserOrderByFeedbackCount(pageable)
+                        : tripRepository.findPublishedWithUser(pageable));
         List<UUID> tripIds = trips.getContent().stream().map(Trip::getId).toList();
         Map<UUID, String> thumbnails = resolveThumbnails(trips.getContent());
         Map<UUID, Long> feedbackCounts = resolveFeedbackCounts(tripIds);

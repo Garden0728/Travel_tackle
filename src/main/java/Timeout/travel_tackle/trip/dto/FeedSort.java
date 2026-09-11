@@ -5,7 +5,9 @@ import Timeout.travel_tackle.global.exception.ErrorCode;
 
 public enum FeedSort {
     LATEST,
-    POPULAR;
+    OLDEST,
+    POPULAR,
+    RELEVANCE;
 
     public static FeedSort from(String value) {
         for (FeedSort sort : values()) {
