@@ -127,6 +127,13 @@ class ImageStorageServiceTests {
     }
 
     @Test
+    void publicBaseUrlWithoutSchemeGetsHttps() {
+        ImageStorageProperties bare = new ImageStorageProperties("b", "ap-northeast-2", "dxxx.cloudfront.net/");
+        assertEquals("https://dxxx.cloudfront.net/images/a.jpg", bare.publicUrlOf("images/a.jpg"));
+        assertEquals("images/a.jpg", bare.keyOf("https://dxxx.cloudfront.net/images/a.jpg"));
+    }
+
+    @Test
     void wrapsS3FailuresInAClearErrorCode() {
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenThrow(S3Exception.builder().statusCode(301).message("wrong endpoint").build());
