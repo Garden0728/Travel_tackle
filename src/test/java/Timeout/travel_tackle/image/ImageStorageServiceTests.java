@@ -9,6 +9,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.mock.web.MockMultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -123,6 +124,17 @@ class ImageStorageServiceTests {
 
         when(s3Client.deleteObject(any(DeleteObjectRequest.class))).thenThrow(new RuntimeException("boom"));
         service.deleteQuietly(USER_ID, BASE + "images/" + USER_ID + "/2026/09/b.jpg");
+    }
+
+    @Test
+    void wrapsS3FailuresInAClearErrorCode() {
+        when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+                .thenThrow(S3Exception.builder().statusCode(301).message("wrong endpoint").build());
+        ImageStorageService service = service(s3Client, properties);
+
+        CustomException ex = assertThrows(CustomException.class, () ->
+                service.upload(USER_ID, new MockMultipartFile("photos", "a.jpg", "image/jpeg", JPEG)));
+        assertEquals(ErrorCode.IMAGE_UPLOAD_FAILED, ex.getErrorCode());
     }
 
     private static ImageStorageService service(S3Client s3Client, ImageStorageProperties properties) {

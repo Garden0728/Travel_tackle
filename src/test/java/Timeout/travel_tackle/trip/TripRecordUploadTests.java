@@ -28,6 +28,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -130,12 +131,13 @@ class TripRecordUploadTests {
     void cleansUpAlreadyUploadedObjectsWhenALaterUploadFails() {
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenReturn(PutObjectResponse.builder().build())
-                .thenThrow(new RuntimeException("s3 down"));
+                .thenThrow(S3Exception.builder().statusCode(301).message("wrong endpoint").build());
 
-        assertThrows(RuntimeException.class, () ->
+        CustomException ex = assertThrows(CustomException.class, () ->
                 tripRecordService.createRecordWithUploads(owner.getId(), tripId,
                         new TripRecordUploadRequest("제목", "내용", List.of(photo("a"), photo("b")), null)));
 
+        assertEquals(ErrorCode.IMAGE_UPLOAD_FAILED, ex.getErrorCode());
         verify(s3Client, times(1)).deleteObject(any(DeleteObjectRequest.class));
     }
 

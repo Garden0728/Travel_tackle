@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.ContentStreamProvider;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -71,7 +72,13 @@ public class ImageStorageService {
                 throw new UncheckedIOException(e);
             }
         });
-        s3Client.putObject(request, RequestBody.fromContentProvider(provider, file.getSize(), type.contentType()));
+        try {
+            s3Client.putObject(request, RequestBody.fromContentProvider(provider, file.getSize(), type.contentType()));
+        } catch (SdkException e) {
+            // 리전 불일치(301), 자격 증명 오류(403), 버킷 없음(404) 등은 설정 문제라 500 대신 명확한 코드로 돌려준다
+            log.error("S3 업로드 실패 (bucket={}, region={}, key={})", properties.bucket(), properties.region(), key, e);
+            throw new CustomException(ErrorCode.IMAGE_UPLOAD_FAILED);
+        }
         return properties.publicUrlOf(key);
     }
 
