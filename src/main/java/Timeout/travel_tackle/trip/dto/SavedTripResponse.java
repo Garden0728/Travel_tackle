@@ -4,6 +4,7 @@ import Timeout.travel_tackle.entity.SavedTrip;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record SavedTripResponse(
@@ -18,10 +19,12 @@ public record SavedTripResponse(
         long feedbackCount,
         long saveCount,
         UUID copiedTripId,
-        LocalDateTime savedAt
+        LocalDateTime savedAt,
+        List<TripDayResponse> days
 ) {
     public static SavedTripResponse of(
-            SavedTrip savedTrip, String region, String thumbnailUrl, long feedbackCount, long saveCount
+            SavedTrip savedTrip, String region, String thumbnailUrl, long feedbackCount, long saveCount,
+            List<TripDayResponse> days
     ) {
         return new SavedTripResponse(
                 savedTrip.getId(),
@@ -35,7 +38,8 @@ public record SavedTripResponse(
                 feedbackCount,
                 saveCount,
                 savedTrip.getCopiedTrip() != null ? savedTrip.getCopiedTrip().getId() : null,
-                savedTrip.getSavedAt()
+                savedTrip.getSavedAt(),
+                days
         );
     }
 }

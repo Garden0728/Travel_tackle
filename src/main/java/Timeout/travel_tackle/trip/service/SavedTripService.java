@@ -132,7 +132,8 @@ public class SavedTripService {
                             region,
                             thumbnails.get(tripId),
                             feedbackCounts.getOrDefault(tripId, 0L),
-                            saveCounts.getOrDefault(tripId, 0L)
+                            saveCounts.getOrDefault(tripId, 0L),
+                            detail.days()
                     );
                 })
                 .toList();
