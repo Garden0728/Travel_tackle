@@ -42,7 +42,7 @@ public class FeedService {
     private final SavedTripRepository savedTripRepository;
 
     /**
-     * 공개된 여행 피드 — 최신순(LATEST) 또는 참견 수순(POPULAR) 페이지네이션.
+     * 공개된 여행 피드 — 최신순(LATEST) 또는 인기순(POPULAR: 참견 수 + 스크랩 수) 페이지네이션.
      * Trip 하나당 PLAN 카드 1개는 항상, 기록(TripRecord)이 있으면 RECORD 카드를 추가로 낸다.
      * 그래서 응답 개수가 요청한 size보다 많을 수 있다 (Trip 1개 -> 최대 2개 항목) — 실사용자 규모가
      * 커지면 페이지네이션을 다시 손봐야 하는 알려진 한계.
@@ -60,7 +60,7 @@ public class FeedService {
         Page<Trip> trips = StringUtils.hasText(keyword)
                 ? tripQueryRepository.searchPublishedTrips(keyword.trim(), sort, pageable)
                 : (sort == FeedSort.POPULAR
-                        ? tripRepository.findPublishedWithUserOrderByFeedbackCount(pageable)
+                        ? tripRepository.findPublishedWithUserOrderByPopularity(pageable)
                         : tripRepository.findPublishedWithUser(pageable));
         List<UUID> tripIds = trips.getContent().stream().map(Trip::getId).toList();
         Map<UUID, String> thumbnails = resolveThumbnails(trips.getContent());

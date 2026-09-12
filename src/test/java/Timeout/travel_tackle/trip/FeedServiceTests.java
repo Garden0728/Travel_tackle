@@ -30,6 +30,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,22 +62,27 @@ class FeedServiceTests {
     }
 
     @Test
-    void popularSortOrdersByFeedbackCountThenCreatedAtDesc() {
-        UUID oldest = createPublishedTrip("첫 번째");   // 참견 1
-        UUID middle = createPublishedTrip("두 번째");   // 참견 0
-        UUID newest = createPublishedTrip("세 번째");   // 참견 0 — middle 과 동점이면 최신이 앞
-        UUID popular = createPublishedTrip("네 번째"); // 참견 2
+    void popularSortOrdersByFeedbackPlusSaveCountThenCreatedAtDesc() {
+        UUID oldest = createPublishedTrip("첫 번째");    // 참견 1 + 스크랩 0 = 1
+        UUID middle = createPublishedTrip("두 번째");    // 참견 0 + 스크랩 0 = 0
+        UUID newest = createPublishedTrip("세 번째");    // 참견 0 + 스크랩 0 = 0 — middle 과 동점이면 최신이 앞
+        UUID scrapped = createPublishedTrip("네 번째");  // 참견 0 + 스크랩 2 = 2 — 참견 없이 스크랩만으로도 올라간다
+        UUID popular = createPublishedTrip("다섯 번째"); // 참견 2 + 스크랩 1 = 3
 
         giveFeedback(reviewerA, oldest);
         giveFeedback(reviewerA, popular);
         giveFeedback(reviewerB, popular);
+        savedTripService.save(reviewerA.getId(), popular);
+        savedTripService.save(reviewerA.getId(), scrapped);
+        savedTripService.save(reviewerB.getId(), scrapped);
         entityManager.flush();
         entityManager.clear();
 
         List<UUID> order = feedService.getFeed(PageRequest.of(0, 10), FeedSort.POPULAR)
                 .getContent().stream().map(FeedItemResponse::tripId).toList();
 
-        assertEquals(List.of(popular, oldest, newest, middle), order);
+        // 저장 복사본은 비공개라 피드에 안 나온다
+        assertEquals(List.of(popular, scrapped, oldest, newest, middle), order);
     }
 
     @Test
@@ -206,11 +212,18 @@ class FeedServiceTests {
                 feed.getContent().stream().map(FeedItemResponse::tripId).toList());
     }
 
+    private int createdSeq = 0;
+
+    // @CreationTimestamp 는 연속 생성 시 같은 값이 될 수 있어, 동점 정렬(최신순) 검증이 흔들리지 않게 생성 시각을 명시한다
     private UUID createPublishedTrip(String title) {
         LocalDate date = LocalDate.of(2026, 7, 1);
         UUID tripId = tripService.createTrip(owner.getId(), new CreateTripRequest(title, date, date)).id();
         tripService.publishTrip(owner.getId(), tripId);
         entityManager.flush();
+        entityManager.createNativeQuery("update trips set created_at = ? where id = ?")
+                .setParameter(1, LocalDateTime.of(2026, 1, 1, 0, 0).plusMinutes(++createdSeq))
+                .setParameter(2, tripId)
+                .executeUpdate();
         return tripId;
     }
 
