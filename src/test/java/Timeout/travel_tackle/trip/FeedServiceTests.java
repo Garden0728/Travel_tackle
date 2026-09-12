@@ -72,9 +72,9 @@ class FeedServiceTests {
         giveFeedback(reviewerA, oldest);
         giveFeedback(reviewerA, popular);
         giveFeedback(reviewerB, popular);
-        savedTripService.save(reviewerA.getId(), popular);
-        savedTripService.save(reviewerA.getId(), scrapped);
-        savedTripService.save(reviewerB.getId(), scrapped);
+        savedTripService.save(reviewerA.getId(), popular, FeedItemType.PLAN);
+        savedTripService.save(reviewerA.getId(), scrapped, FeedItemType.PLAN);
+        savedTripService.save(reviewerB.getId(), scrapped, FeedItemType.PLAN);
         entityManager.flush();
         entityManager.clear();
 
