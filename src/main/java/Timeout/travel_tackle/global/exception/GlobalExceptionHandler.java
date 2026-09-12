@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ErrorResponse.of(errorCode, request.getRequestURI()));
+                .body(ErrorResponse.of(errorCode, exception.getMessage(), request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

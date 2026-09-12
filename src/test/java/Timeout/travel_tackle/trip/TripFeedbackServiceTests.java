@@ -85,6 +85,12 @@ class TripFeedbackServiceTests {
         itemId = tripService.addTripItem(owner.getId(), tripId, dayId,
                 new AddTripItemRequest(cart.getId(), null, null)).id();
 
+        // 공개 조건: 모든 일차에 일정 1개 이상 — 2일차에도 하나 채운다
+        CartItem cartForDay2 = cartItemRepository.save(
+                new CartItem(owner, "125267", "정동진", "img2.jpg", "32", "12", null, null, null));
+        tripService.addTripItem(owner.getId(), tripId, detail.days().get(1).id(),
+                new AddTripItemRequest(cartForDay2.getId(), null, null));
+
         tripService.publishTrip(owner.getId(), tripId);
     }
 
@@ -391,7 +397,8 @@ class TripFeedbackServiceTests {
         entityManager.flush();
         entityManager.clear();
 
-        // TripDay ID 확인 후 deleteTripItem 호출
+        // 공개 상태에서는 일차의 마지막 일정을 지울 수 없으므로 비공개로 돌린 뒤 삭제
+        tripService.unpublishTrip(owner.getId(), tripId);
         UUID fetchedDayId = tripService.getTripDetail(owner.getId(), tripId).days().getFirst().id();
         tripService.deleteTripItem(owner.getId(), tripId, fetchedDayId, itemId);
 
@@ -417,6 +424,8 @@ class TripFeedbackServiceTests {
         entityManager.flush();
         entityManager.clear();
 
+        // 공개 상태에서는 날짜를 바꿀 수 없으므로 비공개로 돌린 뒤 변경
+        tripService.unpublishTrip(owner.getId(), tripId);
         // 날짜 변경 → 일차·아이템 초기화, 피드백 텍스트는 보존
         LocalDate newStart = LocalDate.of(2026, 8, 1);
         tripService.updateTrip(owner.getId(), tripId,

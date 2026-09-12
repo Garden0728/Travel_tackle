@@ -79,6 +79,10 @@ public class TripService {
         Trip trip = findTripOwnedBy(userId, tripId);
         boolean datesChanged = !trip.getStartDate().equals(request.startDate())
                 || !trip.getEndDate().equals(request.endDate());
+        // 날짜가 바뀌면 일차·일정을 전부 다시 만들어 빈 일차가 생기므로, 공개 상태에서는 막는다
+        if (datesChanged && trip.isPublished()) {
+            throw new CustomException(ErrorCode.PUBLISHED_TRIP_DATES_LOCKED);
+        }
 
         trip.updateSchedule(request.title(), request.startDate(), request.endDate());
 
@@ -148,6 +152,9 @@ public class TripService {
         Trip trip = findTripOwnedBy(userId, tripId);
         TripDay day = findDayInTrip(dayId, trip);
         TripItem item = findItemInDay(itemId, day);
+        if (trip.isPublished() && tripItemRepository.countByTripDay(day) <= 1) {
+            throw new CustomException(ErrorCode.PUBLISHED_TRIP_DAY_MUST_KEEP_ITEM);
+        }
         tripFeedbackRepository.clearTripItemById(itemId);
         tripItemRepository.delete(item);
     }
@@ -215,6 +222,9 @@ public class TripService {
             moveWithinSameDay(item, sourceItems, request.newOrderIndex());
             return TripItemResponse.from(item);
         }
+        if (trip.isPublished() && sourceItems.size() <= 1) {
+            throw new CustomException(ErrorCode.PUBLISHED_TRIP_DAY_MUST_KEEP_ITEM);
+        }
 
         List<TripItem> targetItems = new ArrayList<>(
                 tripItemRepository.findAllByTripDayOrderByOrderIndex(newDay));
@@ -242,8 +252,24 @@ public class TripService {
     @Transactional
     public TripSummaryResponse publishTrip(UUID userId, UUID tripId) {
         Trip trip = findTripOwnedBy(userId, tripId);
+        List<Integer> emptyDays = findEmptyDayNumbers(trip);
+        if (!emptyDays.isEmpty()) {
+            String days = emptyDays.stream().map(n -> "Day " + n).collect(Collectors.joining(", "));
+            throw new CustomException(ErrorCode.TRIP_PUBLISH_REQUIRES_ITEMS,
+                    ErrorCode.TRIP_PUBLISH_REQUIRES_ITEMS.getMessage() + " 비어 있는 일차: " + days);
+        }
         trip.publish();
         return TripSummaryResponse.from(trip);
+    }
+
+    private List<Integer> findEmptyDayNumbers(Trip trip) {
+        Set<UUID> daysWithItems = tripItemRepository.countGroupByDay(trip).stream()
+                .map(row -> (UUID) row[0])
+                .collect(Collectors.toSet());
+        return tripDayRepository.findAllByTripOrderByDayNumber(trip).stream()
+                .filter(day -> !daysWithItems.contains(day.getId()))
+                .map(TripDay::getDayNumber)
+                .toList();
     }
 
     @Transactional

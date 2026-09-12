@@ -218,6 +218,11 @@ class FeedServiceTests {
     private UUID createPublishedTrip(String title) {
         LocalDate date = LocalDate.of(2026, 7, 1);
         UUID tripId = tripService.createTrip(owner.getId(), new CreateTripRequest(title, date, date)).id();
+        // 모든 일차에 일정이 있어야 공개할 수 있다
+        UUID dayId = tripService.getTripDetail(owner.getId(), tripId).days().getFirst().id();
+        CartItem cartItem = cartItemRepository.save(
+                new CartItem(owner, "item-" + title, title, null, "1", null, null, null, null));
+        tripService.addTripItem(owner.getId(), tripId, dayId, new AddTripItemRequest(cartItem.getId(), null, null));
         tripService.publishTrip(owner.getId(), tripId);
         entityManager.flush();
         entityManager.createNativeQuery("update trips set created_at = ? where id = ?")
