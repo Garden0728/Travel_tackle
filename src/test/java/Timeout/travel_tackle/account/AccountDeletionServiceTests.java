@@ -16,6 +16,7 @@ import Timeout.travel_tackle.preference.dto.PreferenceRequest;
 import Timeout.travel_tackle.preference.repository.UserPreferenceRepository;
 import Timeout.travel_tackle.preference.service.UserPreferenceService;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
+import Timeout.travel_tackle.trip.dto.AddTripItemRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
 import Timeout.travel_tackle.trip.dto.SavedTripResponse;
 import Timeout.travel_tackle.trip.dto.TripSummaryResponse;
@@ -154,6 +155,12 @@ class AccountDeletionServiceTests {
     private UUID createPublishedTrip(User user, String title) {
         LocalDate date = LocalDate.of(2026, 7, 1);
         UUID tripId = tripService.createTrip(user.getId(), new CreateTripRequest(title, date, date)).id();
+        // 모든 일차에 일정이 있어야 공개할 수 있다
+        UUID dayId = tripService.getTripDetail(user.getId(), tripId).days().getFirst().id();
+        CartItem cartItem = cartItemRepository.save(
+                new CartItem(user, "item-" + title, title, null, "1", null, null, null, null));
+        tripService.addTripItem(user.getId(), tripId, dayId, new AddTripItemRequest(cartItem.getId(), null, null));
+        cartItemRepository.delete(cartItem); // 장바구니 개수 검증에 섞이지 않게 정리 (일정은 스냅샷이라 영향 없음)
         tripService.publishTrip(user.getId(), tripId);
         entityManager.flush();
         return tripId;
