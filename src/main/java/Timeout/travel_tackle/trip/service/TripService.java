@@ -6,10 +6,12 @@ import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripDay;
 import Timeout.travel_tackle.entity.TripItem;
+import Timeout.travel_tackle.entity.TripPhoto;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
+import Timeout.travel_tackle.image.service.ImageStorageService;
 import Timeout.travel_tackle.trip.dto.*;
 import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripDayRepository;
@@ -42,6 +44,7 @@ public class TripService {
     private final TripItemRepository tripItemRepository;
     private final TripQueryRepository tripQueryRepository;
     private final TripPhotoRepository tripPhotoRepository;
+    private final ImageStorageService imageStorageService;
     private final TripRecordRepository tripRecordRepository;
     private final SavedTripRepository savedTripRepository;
     private final UserRepository userRepository;
@@ -95,10 +98,13 @@ public class TripService {
         // FK 제약 준수 삭제 순서:
         // 기록(사진→기록), 저장 이력, 피드백(추천→피드백), 일정(아이템→일차), 여행
         tripRecordRepository.findByTrip(trip).ifPresent(record -> {
+            List<String> photoUrls = tripPhotoRepository.findAllByRecordOrderByUploadedAtAsc(record).stream()
+                    .map(TripPhoto::getImageUrl).toList();
             tripPhotoRepository.deleteAllByRecord(record);
             tripPhotoRepository.flush();
             tripRecordRepository.delete(record);
             tripRecordRepository.flush();
+            imageStorageService.deleteAfterCommit(userId, photoUrls);
         });
         savedTripRepository.deleteAllByOriginalTrip(trip);
         // bulkDeleteByTrip 내부에서 피드백 추천→피드백→아이템→일차 순으로 삭제

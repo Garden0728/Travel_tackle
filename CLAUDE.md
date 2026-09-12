@@ -47,6 +47,7 @@ Code is organized **by feature**. Each feature package owns its `controller`/`se
 - `tour/` — read-only proxy over the Korean public TourAPI (`data.go.kr` KorService2), plus `tour/recommendation/` rule-based recommender. See "Recommendations & preferences" below.
 - `preference/` — per-user travel preferences (`UserPreference`); feeds the recommender.
 - `cart/` — saved tour contents per user.
+- `image/` — `ImageStorageService` uploads trip-record photos to S3 and deletes them on replace/delete. Trip records accept `multipart/form-data` on `POST`/`PATCH /api/trips/{tripId}/record` (repeated form fields `title`, `content`, `photos`, optional `captions` aligned by index, bound to `TripRecordUploadRequest`); the JSON variants that take pre-existing `imageUrl`s still work. Only active when `aws.s3.bucket` is non-blank (`config/S3Config` is `@ConditionalOnExpression`; `application.yaml` maps it from `AWS_S3_BUCKET`); otherwise uploads fail with `IMAGE_001` (503). The server generates the object key (`images/{userId}/{yyyy}/{MM}/{uuid}.{ext}`) and deletes only keys under the caller's own `images/{userId}/` prefix; the type is sniffed from file signatures (jpeg/png/webp), 10MB per file (`WebConfig` raises the multipart limits to 10MB/50MB). `deleteQuietly` only touches URLs under our own base URL, so external image URLs (TourAPI, seed data) are left alone.
 - `config/` — `SecurityConfig`, `JwtConfig`, `SocialOAuthConfig`, `WebConfig` (CORS), `QueryDslConfig`, `TourCacheConfig`, `SwaggerConfig`.
 - `global/exception/` — centralized error handling (see below). `global/util/` — shared helpers (e.g. `UuidConverter.fromSubject` turns a JWT subject into the user `UUID`).
 - `entity/` — all JPA `@Entity` classes (shared across features), `entity/Enum/` for enums.
@@ -114,6 +115,7 @@ H2 runs in-memory (`jdbc:h2:mem:travel_tackle`); there is no external database t
 - Social login: `social.login.enabled=true` plus `KAKAO_CLIENT_ID`/`KAKAO_CLIENT_SECRET` and/or `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
 - SMTP (`SMTP_HOST`/`PORT`/`USERNAME`/`PASSWORD`/`AUTH`/`STARTTLS`, `MAIL_FROM`) — see `docs/AUTH.md`. Tests use a fake mail sender, not real SMTP.
 - `tour.service-key` — TourAPI key.
+- S3 image upload (optional): `application.yaml` maps `aws.s3.bucket`/`region`/`public-base-url` from `AWS_S3_BUCKET` (enables the feature when non-blank), `AWS_REGION` (default `ap-northeast-2`), `AWS_S3_PUBLIC_BASE_URL` (CloudFront domain for read URLs; falls back to the S3 virtual-hosted URL), plus `aws.credentials.access-key`/`secret-key` from `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` (leave blank on AWS to use the IAM role via the SDK default chain). Credentials come from the AWS SDK default chain (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` locally, IAM role on AWS).
 
 ## Frontend
 

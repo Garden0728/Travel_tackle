@@ -173,7 +173,7 @@
 | id | id | UUID (PK) | 고유 식별자 |
 | trip | trip_id | UUID (FK) | 여행 참조 |
 | imageUrl | image_url | String | 이미지 URL |
-| caption | caption | String | 사진 설명 |
+| caption | caption | String(500) | 사진 설명 |
 | uploadedAt | uploaded_at | LocalDateTime | 업로드 일시 |
 
 ---
