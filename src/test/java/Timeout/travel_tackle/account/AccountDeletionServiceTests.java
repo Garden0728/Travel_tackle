@@ -16,6 +16,7 @@ import Timeout.travel_tackle.preference.repository.UserPreferenceRepository;
 import Timeout.travel_tackle.preference.service.UserPreferenceService;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
+import Timeout.travel_tackle.trip.dto.SavedTripResponse;
 import Timeout.travel_tackle.trip.dto.TripSummaryResponse;
 import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripFeedbackRepository;
@@ -125,7 +126,8 @@ class AccountDeletionServiceTests {
         cartItemRepository.save(new CartItem(bystander, "content-2", "제3자 장소", null, "1", null, null, null, null));
         userPreferenceService.create(bystander.getId().toString(), new PreferenceRequest(
                 TravelStyle.MODERATE, BudgetLevel.HIGH, Set.of(InterestTag.HISTORY), Set.of(PreferredRegion.BUSAN)));
-        TripSummaryResponse savedCopy = savedTripService.save(bystander.getId(), ownerTripId);
+        SavedTripResponse scrap = savedTripService.save(bystander.getId(), ownerTripId);
+        TripSummaryResponse savedCopy = savedTripService.copy(bystander.getId(), scrap.savedTripId());
         UUID bystanderCopyTripId = savedCopy.id();
 
         entityManager.flush();

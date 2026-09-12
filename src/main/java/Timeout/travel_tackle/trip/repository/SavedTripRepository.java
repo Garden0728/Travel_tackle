@@ -4,6 +4,7 @@ import Timeout.travel_tackle.entity.SavedTrip;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +28,13 @@ public interface SavedTripRepository extends JpaRepository<SavedTrip, UUID> {
     @Query("select s.originalTrip.id, count(s) from SavedTrip s "
             + "where s.originalTrip.id in :tripIds group by s.originalTrip.id")
     List<Object[]> countGroupByOriginalTripIds(@Param("tripIds") List<UUID> tripIds);
+
+    @Query("select s.originalTrip.id from SavedTrip s where s.user = :user and s.originalTrip.id in :tripIds")
+    List<UUID> findSavedOriginalTripIds(@Param("user") User user, @Param("tripIds") List<UUID> tripIds);
+
+    // Trip 삭제 전 FK 위반을 막기 위해, 그 Trip을 복사본으로 참조 중인 SavedTrip의 참조만 끊는다
+    // (스크랩 이력 자체는 남긴다 — 예: 사용자가 복사본만 지운 경우 "복사하기" 버튼이 다시 활성화됨).
+    @Modifying
+    @Query("update SavedTrip s set s.copiedTrip = null where s.copiedTrip = :copiedTrip")
+    void clearCopiedTripReference(@Param("copiedTrip") Trip copiedTrip);
 }

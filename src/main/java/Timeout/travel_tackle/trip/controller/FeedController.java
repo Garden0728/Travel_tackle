@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +36,7 @@ public class FeedController {
     @GetMapping
     @Operation(summary = "공개 여행 피드 조회 (페이지네이션, keyword로 계획/기록 검색, sort=latest|oldest|popular|relevance)")
     public ResponseEntity<Page<FeedItemResponse>> getFeed(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "latest") String sort,
@@ -58,12 +61,17 @@ public class FeedController {
             pageable = PageRequest.of(safePage, safeSize);
         }
 
-        return ResponseEntity.ok(feedService.getFeed(pageable, feedSort, keyword));
+        UUID userId = jwt != null ? UUID.fromString(jwt.getSubject()) : null;
+        return ResponseEntity.ok(feedService.getFeed(pageable, feedSort, keyword, userId));
     }
 
     @GetMapping("/{tripId}")
     @Operation(summary = "공개 여행 상세 조회 (일정 + 사진 + 작성자)")
-    public ResponseEntity<PublicTripDetailResponse> getPublicTripDetail(@PathVariable UUID tripId) {
-        return ResponseEntity.ok(feedService.getPublicTripDetail(tripId));
+    public ResponseEntity<PublicTripDetailResponse> getPublicTripDetail(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = jwt != null ? UUID.fromString(jwt.getSubject()) : null;
+        return ResponseEntity.ok(feedService.getPublicTripDetail(tripId, userId));
     }
 }

@@ -22,11 +22,12 @@ public record FeedItemResponse(
         String thumbnailUrl,
         long feedbackCount,
         long saveCount,
+        boolean saved,
         LocalDateTime createdAt,
         List<TripDayResponse> days
 ) {
     public static FeedItemResponse ofPlan(
-            Trip trip, String thumbnailUrl, long feedbackCount, long saveCount, String region,
+            Trip trip, String thumbnailUrl, long feedbackCount, long saveCount, boolean saved, String region,
             List<TripDayResponse> days
     ) {
         return new FeedItemResponse(
@@ -42,13 +43,15 @@ public record FeedItemResponse(
                 thumbnailUrl,
                 feedbackCount,
                 saveCount,
+                saved,
                 trip.getCreatedAt(),
                 days
         );
     }
 
     public static FeedItemResponse ofRecord(
-            Trip trip, TripRecord record, String thumbnailUrl, long feedbackCount, long saveCount, String region
+            Trip trip, TripRecord record, String thumbnailUrl, long feedbackCount, long saveCount, boolean saved,
+            String region
     ) {
         return new FeedItemResponse(
                 trip.getId(),
@@ -63,6 +66,7 @@ public record FeedItemResponse(
                 thumbnailUrl,
                 feedbackCount,
                 saveCount,
+                saved,
                 record.getCreatedAt(),
                 null
         );

@@ -19,14 +19,16 @@ public record PublicTripDetailResponse(
         LocalDateTime createdAt,
         List<TripDayResponse> days,
         TripRecordResponse record,
-        long feedbackCount
+        long feedbackCount,
+        boolean saved
 ) {
     public static PublicTripDetailResponse of(
             Trip trip,
             String region,
             List<TripDayResponse> days,
             TripRecordResponse record,
-            long feedbackCount
+            long feedbackCount,
+            boolean saved
     ) {
         return new PublicTripDetailResponse(
                 trip.getId(),
@@ -39,7 +41,8 @@ public record PublicTripDetailResponse(
                 trip.getCreatedAt(),
                 days,
                 record,
-                feedbackCount
+                feedbackCount,
+                saved
         );
     }
 }

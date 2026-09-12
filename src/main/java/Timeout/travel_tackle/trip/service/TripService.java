@@ -107,6 +107,8 @@ public class TripService {
             imageStorageService.deleteAfterCommit(userId, photoUrls);
         });
         savedTripRepository.deleteAllByOriginalTrip(trip);
+        // 이 trip이 누군가의 "복사한 계획"으로 참조되고 있었다면(FK) 그 참조만 끊는다 — 스크랩 이력은 유지
+        savedTripRepository.clearCopiedTripReference(trip);
         // bulkDeleteByTrip 내부에서 피드백 추천→피드백→아이템→일차 순으로 삭제
         deleteAllDaysAndItems(trip);
         tripRepository.delete(trip);
