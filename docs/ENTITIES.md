@@ -151,6 +151,7 @@
 | user | user_id | UUID (FK) | 스크랩한 사용자 참조 |
 | originalTrip | original_trip_id | UUID (FK) | 원본 여행 참조 |
 | copiedTrip | copied_trip_id | UUID (FK, nullable) | 복사해서 만든 내 소유 여행 참조 — 복사 전이거나 복사본을 삭제하면 null |
+| sourceType | source_type | FeedItemType (PLAN, RECORD) | 어느 카드(계획/기록)에서 스크랩했는지. 해제 후 다시 스크랩하면 그 시점 값으로 갱신 |
 | savedAt | saved_at | LocalDateTime | 스크랩 일시 |
 
 ---

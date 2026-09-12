@@ -39,7 +39,7 @@ public class SavedTripController {
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(savedTripService.save(userId, request.tripId()));
+                .body(savedTripService.save(userId, request.tripId(), request.sourceType()));
     }
 
     @PostMapping("/{savedTripId}/copy")

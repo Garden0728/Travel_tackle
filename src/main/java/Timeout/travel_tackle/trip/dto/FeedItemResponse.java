@@ -1,5 +1,6 @@
 package Timeout.travel_tackle.trip.dto;
 
+import Timeout.travel_tackle.entity.Enum.FeedItemType;
 import Timeout.travel_tackle.entity.Enum.TripStatus;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripRecord;

@@ -9,8 +9,8 @@ import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.AddTripItemRequest;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
+import Timeout.travel_tackle.entity.Enum.FeedItemType;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
-import Timeout.travel_tackle.trip.dto.FeedItemType;
 import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripRecordRequest;
@@ -100,8 +100,8 @@ class FeedServiceTests {
         tripRecordService.createRecord(owner.getId(), tripId,
                 new TripRecordRequest("기록", "후기",
                         List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
-        savedTripService.save(reviewerA.getId(), tripId);
-        savedTripService.save(reviewerB.getId(), tripId);
+        savedTripService.save(reviewerA.getId(), tripId, FeedItemType.PLAN);
+        savedTripService.save(reviewerB.getId(), tripId, FeedItemType.PLAN);
         entityManager.flush();
         entityManager.clear();
 

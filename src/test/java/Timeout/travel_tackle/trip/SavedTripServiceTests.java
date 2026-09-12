@@ -3,6 +3,7 @@ package Timeout.travel_tackle.trip;
 import Timeout.travel_tackle.auth.repository.UserRepository;
 import Timeout.travel_tackle.cart.repository.CartItemRepository;
 import Timeout.travel_tackle.entity.CartItem;
+import Timeout.travel_tackle.entity.Enum.FeedItemType;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
@@ -56,7 +57,7 @@ class SavedTripServiceTests {
     void savingOnlyScrapsAndDoesNotCopyYet() {
         UUID originalId = createPublishedTripWithItems(owner, "A", "B");
 
-        SavedTripResponse scrap = savedTripService.save(viewer.getId(), originalId);
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), originalId, FeedItemType.PLAN);
 
         assertEquals(originalId, scrap.originalTripId());
         assertEquals("주인", scrap.ownerName());
@@ -71,7 +72,7 @@ class SavedTripServiceTests {
     @Test
     void copyingScrapedTripCreatesEditableCopyOwnedByViewer() {
         UUID originalId = createPublishedTripWithItems(owner, "A", "B");
-        SavedTripResponse scrap = savedTripService.save(viewer.getId(), originalId);
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), originalId, FeedItemType.PLAN);
 
         TripSummaryResponse copy = savedTripService.copy(viewer.getId(), scrap.savedTripId());
 
@@ -92,7 +93,7 @@ class SavedTripServiceTests {
     @Test
     void copyingTwiceReturnsSameCopyInsteadOfDuplicating() {
         UUID originalId = createPublishedTripWithItems(owner, "A");
-        SavedTripResponse scrap = savedTripService.save(viewer.getId(), originalId);
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), originalId, FeedItemType.PLAN);
 
         TripSummaryResponse firstCopy = savedTripService.copy(viewer.getId(), scrap.savedTripId());
         TripSummaryResponse secondCopy = savedTripService.copy(viewer.getId(), scrap.savedTripId());
@@ -101,12 +102,72 @@ class SavedTripServiceTests {
     }
 
     @Test
+    void savingWithRecordSourceTypeReturnsRecordShapedCard() {
+        UUID tripId = createPublishedTripWithItems(owner, "A");
+        tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("여행 후기 제목", "후기 내용",
+                List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.RECORD);
+
+        assertEquals(FeedItemType.RECORD, scrap.sourceType());
+        assertEquals("여행 후기 제목", scrap.title());
+        assertEquals("후기 내용", scrap.content());
+        assertEquals(null, scrap.days());
+    }
+
+    @Test
+    void savingWithPlanSourceTypeReturnsPlanShapedCard() {
+        UUID tripId = createPublishedTripWithItems(owner, "A");
+
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN);
+
+        assertEquals(FeedItemType.PLAN, scrap.sourceType());
+        assertEquals("원본 여행", scrap.title());
+        assertEquals(null, scrap.content());
+        assertEquals(1, scrap.days().size());
+    }
+
+    @Test
+    void recordSourceTypeFallsBackToPlanShapeWhenRecordLaterDeleted() {
+        UUID tripId = createPublishedTripWithItems(owner, "A");
+        tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("여행 후기 제목", "후기 내용",
+                List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.RECORD);
+        assertEquals(FeedItemType.RECORD, scrap.sourceType());
+
+        tripRecordService.deleteRecord(owner.getId(), tripId);
+        entityManager.flush();
+        entityManager.clear();
+
+        SavedTripResponse afterDelete = savedTripService.getSavedTrips(viewer.getId()).getFirst();
+        assertEquals(FeedItemType.PLAN, afterDelete.sourceType());
+        assertEquals("원본 여행", afterDelete.title());
+        assertEquals(null, afterDelete.content());
+        assertEquals(1, afterDelete.days().size());
+    }
+
+    @Test
+    void rescrapingAfterUnsaveUsesLatestSourceType() {
+        UUID tripId = createPublishedTripWithItems(owner, "A");
+        tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("여행 후기 제목", "후기 내용",
+                List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
+
+        SavedTripResponse firstScrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN);
+        assertEquals(FeedItemType.PLAN, firstScrap.sourceType());
+        savedTripService.unsave(viewer.getId(), firstScrap.savedTripId());
+
+        SavedTripResponse secondScrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.RECORD);
+
+        assertEquals(FeedItemType.RECORD, secondScrap.sourceType());
+    }
+
+    @Test
     void rejectsSavingUnpublishedTrip() {
         UUID tripId = tripService.createTrip(owner.getId(),
                 new CreateTripRequest("비공개 여행", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1))).id();
 
         CustomException exception = assertThrows(CustomException.class,
-                () -> savedTripService.save(viewer.getId(), tripId));
+                () -> savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN));
 
         assertEquals(ErrorCode.TRIP_NOT_PUBLISHED, exception.getErrorCode());
     }
@@ -116,7 +177,7 @@ class SavedTripServiceTests {
         UUID tripId = createPublishedTripWithItems(owner, "A");
 
         CustomException exception = assertThrows(CustomException.class,
-                () -> savedTripService.save(owner.getId(), tripId));
+                () -> savedTripService.save(owner.getId(), tripId, FeedItemType.PLAN));
 
         assertEquals(ErrorCode.CANNOT_SAVE_OWN_TRIP, exception.getErrorCode());
     }
@@ -124,10 +185,10 @@ class SavedTripServiceTests {
     @Test
     void rejectsSavingSameTripTwice() {
         UUID tripId = createPublishedTripWithItems(owner, "A");
-        savedTripService.save(viewer.getId(), tripId);
+        savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN);
 
         CustomException exception = assertThrows(CustomException.class,
-                () -> savedTripService.save(viewer.getId(), tripId));
+                () -> savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN));
 
         assertEquals(ErrorCode.TRIP_ALREADY_SAVED, exception.getErrorCode());
     }
@@ -135,7 +196,7 @@ class SavedTripServiceTests {
     @Test
     void unsaveRemovesLedgerButKeepsCopy() {
         UUID tripId = createPublishedTripWithItems(owner, "A");
-        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId);
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN);
         TripSummaryResponse copy = savedTripService.copy(viewer.getId(), scrap.savedTripId());
 
         savedTripService.unsave(viewer.getId(), scrap.savedTripId());
@@ -150,7 +211,7 @@ class SavedTripServiceTests {
         UUID tripId = createPublishedTripWithItems(owner, "A");
         tripRecordService.createRecord(owner.getId(), tripId, new TripRecordRequest("여행 제목", "후기 내용",
                 List.of(new TripRecordRequest.PhotoEntry("https://cdn.test/p1.jpg", "캡션"))));
-        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId);
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN);
         TripSummaryResponse copy = savedTripService.copy(viewer.getId(), scrap.savedTripId());
 
         // 운영에선 요청마다 영속성 컨텍스트가 새로 열린다. 같은 트랜잭션으로 묶인 테스트가
@@ -169,7 +230,7 @@ class SavedTripServiceTests {
     @Test
     void deletingCopiedTripClearsReferenceButKeepsScrapHistory() {
         UUID tripId = createPublishedTripWithItems(owner, "A");
-        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId);
+        SavedTripResponse scrap = savedTripService.save(viewer.getId(), tripId, FeedItemType.PLAN);
         TripSummaryResponse copy = savedTripService.copy(viewer.getId(), scrap.savedTripId());
 
         entityManager.flush();
