@@ -22,4 +22,11 @@ public interface TripRecordRepository extends JpaRepository<TripRecord, UUID> {
     @Query("select r from TripRecord r join fetch r.trip t join fetch t.user "
             + "where t.published = true and t.id in :tripIds")
     List<TripRecord> findPublishedByTripIdInWithTripAndUser(@Param("tripIds") Collection<UUID> tripIds);
+
+    /**
+     * 보관함(SavedTrip) 응답 조립용 — 공개 여부와 무관하게 여러 계획의 기록을 한 번에 조회한다.
+     * sourceType=RECORD로 스크랩한 계획이라도 그 사이 기록이 지워졌을 수 있어(폴백 판단에 씀).
+     */
+    @Query("select r from TripRecord r where r.trip.id in :tripIds")
+    List<TripRecord> findAllByTripIdIn(@Param("tripIds") Collection<UUID> tripIds);
 }

@@ -8,6 +8,7 @@ import Timeout.travel_tackle.entity.CartItem;
 import Timeout.travel_tackle.entity.TripFeedback;
 import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.entity.Enum.BudgetLevel;
+import Timeout.travel_tackle.entity.Enum.FeedItemType;
 import Timeout.travel_tackle.entity.Enum.InterestTag;
 import Timeout.travel_tackle.entity.Enum.PreferredRegion;
 import Timeout.travel_tackle.entity.Enum.TravelStyle;
@@ -16,6 +17,7 @@ import Timeout.travel_tackle.preference.repository.UserPreferenceRepository;
 import Timeout.travel_tackle.preference.service.UserPreferenceService;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
+import Timeout.travel_tackle.trip.dto.SavedTripResponse;
 import Timeout.travel_tackle.trip.dto.TripSummaryResponse;
 import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripFeedbackRepository;
@@ -79,7 +81,7 @@ class AccountDeletionServiceTests {
                 TravelStyle.RELAXED, BudgetLevel.LOW, Set.of(InterestTag.FOOD), Set.of(PreferredRegion.SEOUL)));
 
         UUID otherTripId = createPublishedTrip(other, "other의 여행");
-        savedTripService.save(owner.getId(), otherTripId);
+        savedTripService.save(owner.getId(), otherTripId, FeedItemType.PLAN);
 
         // other가 owner 여행에 남긴 참견 (owner 탈퇴해도 지워져야 함 - trip 자체가 삭제되므로)
         feedbackService.create(other.getId(), ownerTripId,
@@ -125,7 +127,8 @@ class AccountDeletionServiceTests {
         cartItemRepository.save(new CartItem(bystander, "content-2", "제3자 장소", null, "1", null, null, null, null));
         userPreferenceService.create(bystander.getId().toString(), new PreferenceRequest(
                 TravelStyle.MODERATE, BudgetLevel.HIGH, Set.of(InterestTag.HISTORY), Set.of(PreferredRegion.BUSAN)));
-        TripSummaryResponse savedCopy = savedTripService.save(bystander.getId(), ownerTripId);
+        SavedTripResponse scrap = savedTripService.save(bystander.getId(), ownerTripId, FeedItemType.PLAN);
+        TripSummaryResponse savedCopy = savedTripService.copy(bystander.getId(), scrap.savedTripId());
         UUID bystanderCopyTripId = savedCopy.id();
 
         entityManager.flush();

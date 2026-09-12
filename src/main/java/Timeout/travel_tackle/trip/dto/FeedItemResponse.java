@@ -1,5 +1,6 @@
 package Timeout.travel_tackle.trip.dto;
 
+import Timeout.travel_tackle.entity.Enum.FeedItemType;
 import Timeout.travel_tackle.entity.Enum.TripStatus;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripRecord;
@@ -22,11 +23,12 @@ public record FeedItemResponse(
         String thumbnailUrl,
         long feedbackCount,
         long saveCount,
+        UUID savedTripId,
         LocalDateTime createdAt,
         List<TripDayResponse> days
 ) {
     public static FeedItemResponse ofPlan(
-            Trip trip, String thumbnailUrl, long feedbackCount, long saveCount, String region,
+            Trip trip, String thumbnailUrl, long feedbackCount, long saveCount, UUID savedTripId, String region,
             List<TripDayResponse> days
     ) {
         return new FeedItemResponse(
@@ -42,13 +44,15 @@ public record FeedItemResponse(
                 thumbnailUrl,
                 feedbackCount,
                 saveCount,
+                savedTripId,
                 trip.getCreatedAt(),
                 days
         );
     }
 
     public static FeedItemResponse ofRecord(
-            Trip trip, TripRecord record, String thumbnailUrl, long feedbackCount, long saveCount, String region
+            Trip trip, TripRecord record, String thumbnailUrl, long feedbackCount, long saveCount, UUID savedTripId,
+            String region
     ) {
         return new FeedItemResponse(
                 trip.getId(),
@@ -63,6 +67,7 @@ public record FeedItemResponse(
                 thumbnailUrl,
                 feedbackCount,
                 saveCount,
+                savedTripId,
                 record.getCreatedAt(),
                 null
         );

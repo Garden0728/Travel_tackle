@@ -136,20 +136,23 @@
 **연관관계**
 - `TripDay` 1:N (contains)
 - `TripPhoto` 1:N (has)
-- `SavedTrip` 1:N (copied_as)
+- `SavedTrip` 1:N (original_trip로 참조 — 이 여행을 원본으로 스크랩한 기록들)
+- `SavedTrip` 1:0..1 (copied_trip로 참조 — 이 여행이 누군가의 복사본이라면 그 스크랩 기록 하나)
 
 ---
 
 ## SavedTrip
 **테이블**: `saved_trips`  
-**설명**: 사용자가 다른 사용자의 여행을 저장(복사)한 기록
+**설명**: 사용자가 다른 사용자의 공개 여행을 스크랩(찜)한 기록. 스크랩과 "내 계획으로 복사"는 별개 동작이라, 스크랩 시점엔 `copiedTrip`이 비어 있다가 사용자가 실제로 복사할 때만 채워진다.
 
 | 필드 (Java) | 컬럼 (DB) | 타입 | 설명 |
 |---|---|---|---|
 | id | id | UUID (PK) | 고유 식별자 |
-| user | user_id | UUID (FK) | 저장한 사용자 참조 |
+| user | user_id | UUID (FK) | 스크랩한 사용자 참조 |
 | originalTrip | original_trip_id | UUID (FK) | 원본 여행 참조 |
-| savedAt | saved_at | LocalDateTime | 저장 일시 |
+| copiedTrip | copied_trip_id | UUID (FK, nullable) | 복사해서 만든 내 소유 여행 참조 — 복사 전이거나 복사본을 삭제하면 null |
+| sourceType | source_type | FeedItemType (PLAN, RECORD) | 어느 카드(계획/기록)에서 스크랩했는지. 해제 후 다시 스크랩하면 그 시점 값으로 갱신 |
+| savedAt | saved_at | LocalDateTime | 스크랩 일시 |
 
 ---
 

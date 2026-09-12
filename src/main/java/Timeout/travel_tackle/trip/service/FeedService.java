@@ -1,7 +1,9 @@
 package Timeout.travel_tackle.trip.service;
 
+import Timeout.travel_tackle.auth.repository.UserRepository;
 import Timeout.travel_tackle.entity.Trip;
 import Timeout.travel_tackle.entity.TripRecord;
+import Timeout.travel_tackle.entity.User;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
@@ -40,6 +42,7 @@ public class FeedService {
     private final TripQueryRepository tripQueryRepository;
     private final TripFeedbackRepository tripFeedbackRepository;
     private final SavedTripRepository savedTripRepository;
+    private final UserRepository userRepository;
 
     /**
      * 공개된 여행 피드 — 최신순(LATEST) 또는 인기순(POPULAR: 참견 수 + 스크랩 수) 페이지네이션.
@@ -49,7 +52,7 @@ public class FeedService {
      */
     @Transactional(readOnly = true)
     public Page<FeedItemResponse> getFeed(Pageable pageable, FeedSort sort) {
-        return getFeed(pageable, sort, null);
+        return getFeed(pageable, sort, null, null);
     }
 
     /**
@@ -57,6 +60,15 @@ public class FeedService {
      */
     @Transactional(readOnly = true)
     public Page<FeedItemResponse> getFeed(Pageable pageable, FeedSort sort, String keyword) {
+        return getFeed(pageable, sort, keyword, null);
+    }
+
+    /**
+     * userId가 있으면(로그인 상태) 각 항목에 내가 스크랩했는지(saved) 여부를 채워 준다.
+     * GET /api/feed는 permitAll이라 비로그인 요청은 userId=null로 들어오고, 이 경우 saved는 항상 false.
+     */
+    @Transactional(readOnly = true)
+    public Page<FeedItemResponse> getFeed(Pageable pageable, FeedSort sort, String keyword, UUID userId) {
         Page<Trip> trips = StringUtils.hasText(keyword)
                 ? tripQueryRepository.searchPublishedTrips(keyword.trim(), sort, pageable)
                 : (sort == FeedSort.POPULAR
@@ -67,9 +79,10 @@ public class FeedService {
         Map<UUID, Long> feedbackCounts = resolveFeedbackCounts(tripIds);
         Map<UUID, Long> saveCounts = resolveSaveCounts(tripIds);
         Map<UUID, TripRecord> records = resolveRecords(tripIds);
+        Map<UUID, UUID> savedTripIdsByOriginal = resolveSavedTripIdsByOriginal(userId, tripIds);
 
         List<FeedItemResponse> items = trips.getContent().stream()
-                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, saveCounts, records).stream())
+                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, saveCounts, records, savedTripIdsByOriginal).stream())
                 .toList();
 
         return new PageImpl<>(items, pageable, trips.getTotalElements());
@@ -80,6 +93,11 @@ public class FeedService {
      */
     @Transactional(readOnly = true)
     public PublicTripDetailResponse getPublicTripDetail(UUID tripId) {
+        return getPublicTripDetail(tripId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PublicTripDetailResponse getPublicTripDetail(UUID tripId, UUID userId) {
         Trip trip = tripRepository.findPublishedDetailById(tripId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TRIP_NOT_PUBLISHED));
 
@@ -91,28 +109,45 @@ public class FeedService {
 
         long feedbackCount = tripFeedbackRepository.countGroupByTripIds(List.of(tripId))
                 .stream().findFirst().map(row -> (Long) row[1]).orElse(0L);
+        UUID savedTripId = resolveSavedTripIdsByOriginal(userId, List.of(tripId)).get(tripId);
 
-        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount);
+        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount, savedTripId);
     }
 
     private List<FeedItemResponse> buildFeedItems(
             Trip trip, Map<UUID, String> thumbnails, Map<UUID, Long> feedbackCounts,
-            Map<UUID, Long> saveCounts, Map<UUID, TripRecord> records
+            Map<UUID, Long> saveCounts, Map<UUID, TripRecord> records, Map<UUID, UUID> savedTripIdsByOriginal
     ) {
         String thumbnailUrl = thumbnails.get(trip.getId());
         long feedbackCount = feedbackCounts.getOrDefault(trip.getId(), 0L);
         long saveCount = saveCounts.getOrDefault(trip.getId(), 0L);
+        UUID savedTripId = savedTripIdsByOriginal.get(trip.getId());
         TripDetailResponse detail = tripQueryRepository.findDetail(trip);
         String region = resolveRegion(detail);
 
         List<FeedItemResponse> items = new ArrayList<>();
-        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, saveCount, region, detail.days()));
+        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, saveCount, savedTripId, region, detail.days()));
 
         TripRecord record = records.get(trip.getId());
         if (record != null) {
-            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, saveCount, region));
+            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, saveCount, savedTripId, region));
         }
         return items;
+    }
+
+    private Map<UUID, UUID> resolveSavedTripIdsByOriginal(UUID userId, List<UUID> tripIds) {
+        if (userId == null || tripIds.isEmpty()) {
+            return Map.of();
+        }
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return Map.of();
+        }
+        Map<UUID, UUID> savedTripIdsByOriginal = new HashMap<>();
+        for (Object[] row : savedTripRepository.findSavedTripIdsByOriginalTripIds(user, tripIds)) {
+            savedTripIdsByOriginal.put((UUID) row[0], (UUID) row[1]);
+        }
+        return savedTripIdsByOriginal;
     }
 
     private String resolveRegion(TripDetailResponse detail) {

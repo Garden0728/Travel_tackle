@@ -32,14 +32,25 @@ public class SavedTripController {
     private final SavedTripService savedTripService;
 
     @PostMapping
-    @Operation(summary = "다른 사용자의 공개 여행을 내 계획으로 저장(복사)")
-    public ResponseEntity<TripSummaryResponse> save(
+    @Operation(summary = "다른 사용자의 공개 여행을 스크랩(찜) — 원본을 복사하지는 않는다")
+    public ResponseEntity<SavedTripResponse> save(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody SaveTripRequest request
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(savedTripService.save(userId, request.tripId()));
+                .body(savedTripService.save(userId, request.tripId(), request.sourceType()));
+    }
+
+    @PostMapping("/{savedTripId}/copy")
+    @Operation(summary = "스크랩한 여행을 내 계획으로 복사 (이미 복사했다면 기존 복사본을 반환)")
+    public ResponseEntity<TripSummaryResponse> copy(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID savedTripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(savedTripService.copy(userId, savedTripId));
     }
 
     @GetMapping
