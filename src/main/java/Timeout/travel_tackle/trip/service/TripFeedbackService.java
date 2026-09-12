@@ -122,7 +122,7 @@ public class TripFeedbackService {
     public FeedbackResponse update(UUID userId, UUID tripId, UUID feedbackId,
                                    UpdateFeedbackRequest request) {
         TripFeedback feedback = findFeedbackInTrip(feedbackId, tripId);
-        if (!feedback.getAuthor().getId().equals(userId)) {
+        if (feedback.getAuthor() == null || !feedback.getAuthor().getId().equals(userId)) {
             throw new CustomException(ErrorCode.FEEDBACK_ACCESS_DENIED);
         }
 
@@ -140,7 +140,7 @@ public class TripFeedbackService {
     @Transactional
     public void delete(UUID userId, UUID tripId, UUID feedbackId) {
         TripFeedback feedback = findFeedbackInTrip(feedbackId, tripId);
-        boolean isAuthor = feedback.getAuthor().getId().equals(userId);
+        boolean isAuthor = feedback.getAuthor() != null && feedback.getAuthor().getId().equals(userId);
         boolean isTripOwner = feedback.getTrip().getUser().getId().equals(userId);
         if (!isAuthor && !isTripOwner) {
             throw new CustomException(ErrorCode.FEEDBACK_ACCESS_DENIED);

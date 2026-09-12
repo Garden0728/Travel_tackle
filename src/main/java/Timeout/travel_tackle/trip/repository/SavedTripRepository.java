@@ -18,6 +18,8 @@ public interface SavedTripRepository extends JpaRepository<SavedTrip, UUID> {
 
     void deleteAllByOriginalTrip(Trip originalTrip);
 
+    void deleteAllByUser(User user);
+
     @Query("select s from SavedTrip s join fetch s.originalTrip t join fetch t.user "
             + "where s.user = :user order by s.savedAt desc")
     List<SavedTrip> findAllWithOriginalByUser(@Param("user") User user);

@@ -59,6 +59,11 @@ public interface TripFeedbackRepository extends JpaRepository<TripFeedback, UUID
 
     void deleteAllByTripId(UUID tripId);
 
+    // 회원탈퇴 시 남의 여행계획에 남긴 참견은 삭제하지 않고 author만 익명화
+    @Modifying
+    @Query("UPDATE TripFeedback f SET f.author = null WHERE f.author.id = :authorId")
+    void anonymizeByAuthorId(@Param("authorId") UUID authorId);
+
     // 모아보기: 최근 피드백 시각
     @Query("SELECT f.trip.id, MAX(f.createdAt) FROM TripFeedback f WHERE f.trip.id IN :tripIds GROUP BY f.trip.id")
     List<Object[]> findLatestCreatedAtGroupByTripIds(@Param("tripIds") List<UUID> tripIds);

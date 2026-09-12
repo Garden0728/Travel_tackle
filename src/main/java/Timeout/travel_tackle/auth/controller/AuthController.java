@@ -5,10 +5,12 @@ import Timeout.travel_tackle.auth.dto.EmailVerificationConfirmRequest;
 import Timeout.travel_tackle.auth.dto.EmailVerificationRequest;
 import Timeout.travel_tackle.auth.dto.CurrentUserResponse;
 import Timeout.travel_tackle.auth.dto.LoginRequest;
+import Timeout.travel_tackle.auth.dto.NotificationSettingsRequest;
 import Timeout.travel_tackle.auth.dto.PasswordResetConfirmRequest;
 import Timeout.travel_tackle.auth.dto.PasswordResetRequest;
 import Timeout.travel_tackle.auth.dto.SignupRequest;
 import Timeout.travel_tackle.auth.dto.SignupResponse;
+import Timeout.travel_tackle.auth.dto.UpdateProfileRequest;
 import Timeout.travel_tackle.auth.service.EmailVerificationService;
 import Timeout.travel_tackle.auth.service.AuthenticationService;
 import Timeout.travel_tackle.auth.service.PasswordResetService;
@@ -102,6 +104,24 @@ public class AuthController {
     @Operation(summary = "현재 로그인 사용자 조회")
     public ResponseEntity<CurrentUserResponse> me(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(authenticationService.getCurrentUser(jwt.getSubject()));
+    }
+
+    @PatchMapping("/me")
+    @Operation(summary = "프로필 수정 (닉네임/언어)")
+    public ResponseEntity<CurrentUserResponse> updateProfile(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        return ResponseEntity.ok(authenticationService.updateProfile(jwt.getSubject(), request));
+    }
+
+    @PutMapping("/notifications")
+    @Operation(summary = "알림 설정 전체 저장")
+    public ResponseEntity<CurrentUserResponse> updateNotificationSettings(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody NotificationSettingsRequest request
+    ) {
+        return ResponseEntity.ok(authenticationService.updateNotificationSettings(jwt.getSubject(), request));
     }
 
     @PatchMapping("/password")

@@ -11,4 +11,6 @@ public interface UserPreferenceRepository extends JpaRepository<UserPreference, 
 
     @EntityGraph(attributePaths = {"interestTags", "preferredRegions"})
     Optional<UserPreference> findByUserId(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

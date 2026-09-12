@@ -17,6 +17,11 @@
 | nationality | nationality | String | 국적 |
 | creditBalance | credit_balance | int | 보유 크레딧 |
 | freeTrialsUsed | free_trials_used | int | 무료 체험 사용 횟수 |
+| preferredLanguage | preferred_language | String | 선호 언어 코드 (기본값 "ko", 기기 간 동기화용) |
+| notifyEmail | notify_email | boolean | 이메일 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
+| notifyFeedback | notify_feedback | boolean | 피드백(참견) 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
+| notifyRecommend | notify_recommend | boolean | 여행 추천 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
+| notifyEvent | notify_event | boolean | 이벤트 알림 허용 여부 (기본 false, 발송 트리거는 미구현) |
 | createdAt | created_at | LocalDateTime | 가입일시 |
 
 **연관관계**
@@ -211,3 +216,21 @@
 | startTime | start_time | LocalTime | 일정 시작 시간 |
 | endTime | end_time | LocalTime | 일정 종료 시간 |
 | orderIndex | order_index | int | 해당 날짜 내 순서 |
+
+---
+
+## TripFeedback
+**테이블**: `trip_feedbacks`
+**설명**: 공개된 여행계획(Trip 전체/특정 일자/특정 장소 단위)에 남기는 참견(피드백)
+
+| 필드 (Java) | 컬럼 (DB) | 타입 | 설명 |
+|---|---|---|---|
+| id | id | UUID (PK) | 고유 식별자 |
+| trip | trip_id | UUID (FK) | 대상 여행계획 |
+| tripDay | trip_day_id | UUID (FK, nullable) | not null이면 일자 단위 피드백 |
+| tripItem | trip_item_id | UUID (FK, nullable) | not null이면 장소 단위 피드백 (tripDay와 동시 설정 불가) |
+| author | author_id | UUID (FK, nullable) | 작성자. **작성자 탈퇴 시 참견은 남기고 null로 익명화** (AccountDeletionService) |
+| content | content | String | 참견 내용 |
+| read | is_read | boolean | 여행 소유자의 열람 여부 |
+| createdAt | created_at | LocalDateTime | 작성일시 |
+| updatedAt | updated_at | LocalDateTime | 수정일시 |

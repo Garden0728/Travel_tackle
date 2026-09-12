@@ -40,8 +40,9 @@ public class TripFeedback {
     @JoinColumn(name = "trip_item_id")
     private TripItem tripItem;
 
+    // 작성자 탈퇴 시 참견 자체는 남기고 author만 null로 익명화한다 (AccountDeletionService 참고)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", nullable = false)
+    @JoinColumn(name = "author_id")
     private User author;
 
     @Column(nullable = false, length = 2000)
