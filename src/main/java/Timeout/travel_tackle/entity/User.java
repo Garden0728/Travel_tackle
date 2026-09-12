@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.util.StringUtils;
 
@@ -44,22 +45,29 @@ public class User {
     @Column(name = "credit_balance")
     private int creditBalance; //크레딧 잔액
 
+    @ColumnDefault("0") // 기존 행에 NULL 이 들어가면 primitive int 매핑이 조회 시 실패한다
     @Column(name = "free_trials_used")
     private int freeTrialsUsed; //크레딧 없이 무료로 다른 사용자의 계획을 저장한 횟수
 
+    @ColumnDefault("'ko'")
     @Column(name = "preferred_language")
     private String preferredLanguage = "ko"; //선호 언어 코드 (기기 간 동기화용)
 
     // 알림 설정 — 값만 저장, 실제 발송 트리거는 아직 미구현
+    // ddl-auto update 가 기존 행이 있는 테이블에 NOT NULL 컬럼을 추가할 수 있도록 DB 기본값을 함께 준다
+    @ColumnDefault("true")
     @Column(name = "notify_email", nullable = false)
     private boolean notifyEmail = true;
 
+    @ColumnDefault("true")
     @Column(name = "notify_feedback", nullable = false)
     private boolean notifyFeedback = true;
 
+    @ColumnDefault("true")
     @Column(name = "notify_recommend", nullable = false)
     private boolean notifyRecommend = true;
 
+    @ColumnDefault("false")
     @Column(name = "notify_event", nullable = false)
     private boolean notifyEvent = false;
 
