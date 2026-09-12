@@ -29,8 +29,10 @@ public interface SavedTripRepository extends JpaRepository<SavedTrip, UUID> {
             + "where s.originalTrip.id in :tripIds group by s.originalTrip.id")
     List<Object[]> countGroupByOriginalTripIds(@Param("tripIds") List<UUID> tripIds);
 
-    @Query("select s.originalTrip.id from SavedTrip s where s.user = :user and s.originalTrip.id in :tripIds")
-    List<UUID> findSavedOriginalTripIds(@Param("user") User user, @Param("tripIds") List<UUID> tripIds);
+    // row[0] = originalTrip.id, row[1] = savedTrip.id — 피드 카드에서 북마크를 토글(스크랩 해제)하려면
+    // 어떤 SavedTrip을 지울지 알아야 하므로 여부(boolean)가 아니라 id 자체를 돌려준다.
+    @Query("select s.originalTrip.id, s.id from SavedTrip s where s.user = :user and s.originalTrip.id in :tripIds")
+    List<Object[]> findSavedTripIdsByOriginalTripIds(@Param("user") User user, @Param("tripIds") List<UUID> tripIds);
 
     // Trip 삭제 전 FK 위반을 막기 위해, 그 Trip을 복사본으로 참조 중인 SavedTrip의 참조만 끊는다
     // (스크랩 이력 자체는 남긴다 — 예: 사용자가 복사본만 지운 경우 "복사하기" 버튼이 다시 활성화됨).

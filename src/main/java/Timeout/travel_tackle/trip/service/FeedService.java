@@ -27,10 +27,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -81,10 +79,10 @@ public class FeedService {
         Map<UUID, Long> feedbackCounts = resolveFeedbackCounts(tripIds);
         Map<UUID, Long> saveCounts = resolveSaveCounts(tripIds);
         Map<UUID, TripRecord> records = resolveRecords(tripIds);
-        Set<UUID> savedTripIds = resolveSavedTripIds(userId, tripIds);
+        Map<UUID, UUID> savedTripIdsByOriginal = resolveSavedTripIdsByOriginal(userId, tripIds);
 
         List<FeedItemResponse> items = trips.getContent().stream()
-                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, saveCounts, records, savedTripIds).stream())
+                .flatMap(trip -> buildFeedItems(trip, thumbnails, feedbackCounts, saveCounts, records, savedTripIdsByOriginal).stream())
                 .toList();
 
         return new PageImpl<>(items, pageable, trips.getTotalElements());
@@ -111,41 +109,45 @@ public class FeedService {
 
         long feedbackCount = tripFeedbackRepository.countGroupByTripIds(List.of(tripId))
                 .stream().findFirst().map(row -> (Long) row[1]).orElse(0L);
-        boolean saved = !resolveSavedTripIds(userId, List.of(tripId)).isEmpty();
+        UUID savedTripId = resolveSavedTripIdsByOriginal(userId, List.of(tripId)).get(tripId);
 
-        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount, saved);
+        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount, savedTripId);
     }
 
     private List<FeedItemResponse> buildFeedItems(
             Trip trip, Map<UUID, String> thumbnails, Map<UUID, Long> feedbackCounts,
-            Map<UUID, Long> saveCounts, Map<UUID, TripRecord> records, Set<UUID> savedTripIds
+            Map<UUID, Long> saveCounts, Map<UUID, TripRecord> records, Map<UUID, UUID> savedTripIdsByOriginal
     ) {
         String thumbnailUrl = thumbnails.get(trip.getId());
         long feedbackCount = feedbackCounts.getOrDefault(trip.getId(), 0L);
         long saveCount = saveCounts.getOrDefault(trip.getId(), 0L);
-        boolean saved = savedTripIds.contains(trip.getId());
+        UUID savedTripId = savedTripIdsByOriginal.get(trip.getId());
         TripDetailResponse detail = tripQueryRepository.findDetail(trip);
         String region = resolveRegion(detail);
 
         List<FeedItemResponse> items = new ArrayList<>();
-        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, saveCount, saved, region, detail.days()));
+        items.add(FeedItemResponse.ofPlan(trip, thumbnailUrl, feedbackCount, saveCount, savedTripId, region, detail.days()));
 
         TripRecord record = records.get(trip.getId());
         if (record != null) {
-            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, saveCount, saved, region));
+            items.add(FeedItemResponse.ofRecord(trip, record, thumbnailUrl, feedbackCount, saveCount, savedTripId, region));
         }
         return items;
     }
 
-    private Set<UUID> resolveSavedTripIds(UUID userId, List<UUID> tripIds) {
+    private Map<UUID, UUID> resolveSavedTripIdsByOriginal(UUID userId, List<UUID> tripIds) {
         if (userId == null || tripIds.isEmpty()) {
-            return Set.of();
+            return Map.of();
         }
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            return Set.of();
+            return Map.of();
         }
-        return new HashSet<>(savedTripRepository.findSavedOriginalTripIds(user, tripIds));
+        Map<UUID, UUID> savedTripIdsByOriginal = new HashMap<>();
+        for (Object[] row : savedTripRepository.findSavedTripIdsByOriginalTripIds(user, tripIds)) {
+            savedTripIdsByOriginal.put((UUID) row[0], (UUID) row[1]);
+        }
+        return savedTripIdsByOriginal;
     }
 
     private String resolveRegion(TripDetailResponse detail) {
