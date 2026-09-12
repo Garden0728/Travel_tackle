@@ -86,6 +86,19 @@ class FeedServiceTests {
     }
 
     @Test
+    void feedItemsAndPublicDetailCarryOwnerId() {
+        UUID tripId = createPublishedTrip("소유자 확인");
+        entityManager.flush();
+        entityManager.clear();
+
+        FeedItemResponse item = feedService.getFeed(PageRequest.of(0, 10), FeedSort.LATEST).getContent().getFirst();
+        assertEquals(owner.getId(), item.ownerId());
+        assertEquals("계획자", item.ownerName());
+
+        assertEquals(owner.getId(), feedService.getPublicTripDetail(tripId, null).ownerId());
+    }
+
+    @Test
     void latestSortKeepsCreatedAtDescOrder() {
         UUID first = createPublishedTrip("첫 번째");
         UUID second = createPublishedTrip("두 번째");
