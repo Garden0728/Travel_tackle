@@ -3,11 +3,16 @@ package Timeout.travel_tackle.auth.service;
 import Timeout.travel_tackle.auth.dto.ChangePasswordRequest;
 import Timeout.travel_tackle.auth.dto.CurrentUserResponse;
 import Timeout.travel_tackle.auth.dto.LoginRequest;
+import Timeout.travel_tackle.auth.dto.NotificationSettingsRequest;
+import Timeout.travel_tackle.auth.dto.UpdateProfileRequest;
 import Timeout.travel_tackle.auth.jwt.AuthCookieService;
 import Timeout.travel_tackle.auth.jwt.service.RefreshTokenService;
 import Timeout.travel_tackle.auth.jwt.service.RefreshTokenService.AuthTokens;
+import Timeout.travel_tackle.auth.repository.UserAuthProviderRepository;
 import Timeout.travel_tackle.auth.repository.UserRepository;
+import Timeout.travel_tackle.entity.Enum.AuthProvider;
 import Timeout.travel_tackle.entity.User;
+import Timeout.travel_tackle.entity.UserAuthProvider;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.global.util.UuidConverter;
@@ -17,7 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,6 +32,7 @@ import java.util.UUID;
 public class AuthenticationService {
 
     private final UserRepository userRepository;
+    private final UserAuthProviderRepository userAuthProviderRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
@@ -40,7 +48,7 @@ public class AuthenticationService {
 
         AuthTokens tokens = refreshTokenService.issueTokens(user);
         authCookieService.writeTokens(response, tokens);
-        return CurrentUserResponse.from(user);
+        return toResponse(user);
     }
 
     @Transactional
@@ -59,9 +67,42 @@ public class AuthenticationService {
     @Transactional(readOnly = true)
     public CurrentUserResponse getCurrentUser(String subject) {
         UUID userId = UuidConverter.fromSubject(subject);
-        return userRepository.findById(userId)
-                .map(CurrentUserResponse::from)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+        return toResponse(user);
+    }
+
+    @Transactional
+    public CurrentUserResponse updateProfile(String subject, UpdateProfileRequest request) {
+        UUID userId = UuidConverter.fromSubject(subject);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+
+        if (StringUtils.hasText(request.name())) {
+            user.changeName(request.name());
+        }
+        if (StringUtils.hasText(request.preferredLanguage())) {
+            user.changeLanguage(request.preferredLanguage());
+        }
+        return toResponse(user);
+    }
+
+    @Transactional
+    public CurrentUserResponse updateNotificationSettings(String subject, NotificationSettingsRequest request) {
+        UUID userId = UuidConverter.fromSubject(subject);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHENTICATED));
+
+        user.updateNotificationSettings(request.notifyEmail(), request.notifyFeedback(),
+                request.notifyRecommend(), request.notifyEvent());
+        return toResponse(user);
+    }
+
+    private CurrentUserResponse toResponse(User user) {
+        List<AuthProvider> providers = userAuthProviderRepository.findAllByUserId(user.getId()).stream()
+                .map(UserAuthProvider::getProvider)
+                .toList();
+        return CurrentUserResponse.from(user, providers);
     }
 
     @Transactional

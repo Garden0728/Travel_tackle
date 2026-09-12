@@ -22,4 +22,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update RefreshToken r set r.revokedAt = :now where r.user = :user and r.revokedAt is null")
     int revokeAllActiveByUser(@Param("user") User user, @Param("now") LocalDateTime now);
+
+    // 회원탈퇴 시 RefreshToken row 자체를 삭제 (revoke만으로는 user FK 제약이 남아 계정 삭제가 막힘)
+    void deleteAllByUser(User user);
 }

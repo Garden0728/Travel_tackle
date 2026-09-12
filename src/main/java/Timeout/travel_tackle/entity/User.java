@@ -1,12 +1,16 @@
 package Timeout.travel_tackle.entity;
 
+import Timeout.travel_tackle.global.exception.CustomException;
+import Timeout.travel_tackle.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -14,6 +18,10 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
+
+    // 프론트(LANGUAGES, i18n/index.jsx)·챗봇(ChatRequest.language)과 동일한 언어 코드 집합
+    private static final Set<String> SUPPORTED_LANGUAGES =
+            Set.of("ko", "en", "ja", "zh", "zh-tw", "de", "fr", "es", "ru");
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,6 +46,22 @@ public class User {
 
     @Column(name = "free_trials_used")
     private int freeTrialsUsed; //크레딧 없이 무료로 다른 사용자의 계획을 저장한 횟수
+
+    @Column(name = "preferred_language")
+    private String preferredLanguage = "ko"; //선호 언어 코드 (기기 간 동기화용)
+
+    // 알림 설정 — 값만 저장, 실제 발송 트리거는 아직 미구현
+    @Column(name = "notify_email", nullable = false)
+    private boolean notifyEmail = true;
+
+    @Column(name = "notify_feedback", nullable = false)
+    private boolean notifyFeedback = true;
+
+    @Column(name = "notify_recommend", nullable = false)
+    private boolean notifyRecommend = true;
+
+    @Column(name = "notify_event", nullable = false)
+    private boolean notifyEvent = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -66,6 +90,28 @@ public class User {
 
     public void changePassword(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public void changeName(String name) {
+        if (!StringUtils.hasText(name)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+        this.name = name;
+    }
+
+    public void changeLanguage(String preferredLanguage) {
+        if (!SUPPORTED_LANGUAGES.contains(preferredLanguage)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+        this.preferredLanguage = preferredLanguage;
+    }
+
+    public void updateNotificationSettings(boolean notifyEmail, boolean notifyFeedback,
+                                            boolean notifyRecommend, boolean notifyEvent) {
+        this.notifyEmail = notifyEmail;
+        this.notifyFeedback = notifyFeedback;
+        this.notifyRecommend = notifyRecommend;
+        this.notifyEvent = notifyEvent;
     }
 
     public void useFreeTrial() {
