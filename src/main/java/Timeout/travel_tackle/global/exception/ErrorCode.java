@@ -70,6 +70,11 @@ public enum ErrorCode {
     PREFERENCE_ALREADY_EXISTS(HttpStatus.CONFLICT, "PREF_001", "이미 선호도가 등록되어 있습니다."),
     PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "PREF_002", "선호도 정보를 찾을 수 없습니다."),
 
+    //이미지 업로드(S3)에 관련 예외
+    IMAGE_STORAGE_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "IMAGE_001", "이미지 저장소가 설정되지 않았습니다."),
+    UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "IMAGE_002", "지원하지 않는 이미지 형식입니다. (jpeg, png, webp)"),
+    IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "IMAGE_003", "이미지는 파일당 10MB, 요청 전체 50MB 이하여야 합니다."),
+
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_002", "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");
 

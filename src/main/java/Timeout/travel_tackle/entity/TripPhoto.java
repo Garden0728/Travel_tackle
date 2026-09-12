@@ -26,6 +26,7 @@ public class TripPhoto { // 기록(TripRecord)에 첨부된 사진. 이미지 �
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
+    @Column(length = 500)
     private String caption; // 사진 설명(선택)
 
     @CreationTimestamp
