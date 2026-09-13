@@ -9,6 +9,7 @@ import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
 import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.PublicTripDetailResponse;
+import Timeout.travel_tackle.trip.dto.RegionCountResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripRecordResponse;
 import Timeout.travel_tackle.trip.repository.SavedTripRepository;
@@ -25,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,6 +89,32 @@ public class FeedService {
                 .toList();
 
         return new PageImpl<>(items, pageable, trips.getTotalElements());
+    }
+
+    /**
+     * 기간 내 공개 계획을 첫 일정 지역별로 센다. 계획 수 내림차순, 동점은 지역명 오름차순, 상위 size 개.
+     * 기간은 계획 생성일(createdAt) 기준이며 from/to 는 날짜 단위로 양끝 포함, null 이면 무제한.
+     */
+    @Transactional(readOnly = true)
+    public List<RegionCountResponse> getRegionCounts(LocalDate from, LocalDate to, int size) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+        LocalDateTime fromAt = from == null ? null : from.atStartOfDay();
+        LocalDateTime toAt = to == null ? null : to.plusDays(1).atStartOfDay().minusNanos(1);
+
+        Map<String, Long> counts = new HashMap<>();
+        tripQueryRepository.findFirstItemAddressOfPublishedTrips(fromAt, toAt).values().stream()
+                .map(RegionLabelResolver::fromAddress)
+                .filter(region -> region != null && !region.isBlank())
+                .forEach(region -> counts.merge(region, 1L, Long::sum));
+
+        return counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .limit(size)
+                .map(entry -> new RegionCountResponse(entry.getKey(), entry.getValue()))
+                .toList();
     }
 
     /**
