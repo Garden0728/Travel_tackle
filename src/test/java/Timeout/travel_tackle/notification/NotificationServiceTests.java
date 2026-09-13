@@ -18,6 +18,8 @@ import Timeout.travel_tackle.trip.dto.AddTripItemRequest;
 import Timeout.travel_tackle.trip.dto.CreateFeedbackRequest;
 import Timeout.travel_tackle.trip.dto.CreateTripRequest;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
+import Timeout.travel_tackle.entity.Enum.FeedItemType;
+import Timeout.travel_tackle.trip.service.SavedTripService;
 import Timeout.travel_tackle.trip.service.TripFeedbackService;
 import Timeout.travel_tackle.trip.service.TripService;
 import jakarta.persistence.EntityManager;
@@ -54,6 +56,7 @@ class NotificationServiceTests {
     @Autowired NotificationService notificationService;
     @Autowired NotificationRepository notificationRepository;
     @Autowired TripFeedbackService feedbackService;
+    @Autowired SavedTripService savedTripService;
     @Autowired TripService tripService;
     @Autowired UserRepository userRepository;
     @Autowired CartItemRepository cartItemRepository;
@@ -122,6 +125,27 @@ class NotificationServiceTests {
         owner.updateNotificationSettings(true, false, true, false); // 참견 알림 끔
         entityManager.flush();
         feedbackService.create(reviewer.getId(), tripId, new CreateFeedbackRequest("두 번째 참견", null, null, List.of()));
+        assertEquals(1, notificationService.getUnreadCount(owner.getId()).unreadCount());
+    }
+
+    @Test
+    void scrapCreatesNotificationWithoutFeedbackBlockAndFollowsFeedbackSetting() {
+        savedTripService.save(reviewer.getId(), tripId, FeedItemType.PLAN);
+
+        NotificationPageResponse page = notificationService.getNotifications(owner.getId(), PageRequest.of(0, 10));
+        assertEquals(1, page.unreadCount());
+        NotificationResponse n = page.content().getFirst();
+        assertEquals(NotificationType.SCRAP, n.type());
+        assertEquals("리뷰어", n.actor().name());
+        assertEquals("강릉 여행", n.trip().title());
+        assertNull(n.feedback());
+        assertEquals(0, notificationService.getUnreadCount(reviewer.getId()).unreadCount());
+
+        // 참견 알림 설정을 끄면 스크랩 알림도 같이 꺼진다
+        owner.updateNotificationSettings(true, false, true, false);
+        entityManager.flush();
+        User another = userRepository.save(new User("another-" + UUID.randomUUID() + "@noti.test", "다른사람", "KR"));
+        savedTripService.save(another.getId(), tripId, FeedItemType.PLAN);
         assertEquals(1, notificationService.getUnreadCount(owner.getId()).unreadCount());
     }
 

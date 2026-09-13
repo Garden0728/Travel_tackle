@@ -19,7 +19,7 @@
 | freeTrialsUsed | free_trials_used | int | 무료 체험 사용 횟수 |
 | preferredLanguage | preferred_language | String | 선호 언어 코드 (기본값 "ko", 기기 간 동기화용) |
 | notifyEmail | notify_email | boolean | 이메일 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
-| notifyFeedback | notify_feedback | boolean | 피드백(참견) 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
+| notifyFeedback | notify_feedback | boolean | 활동 알림(참견·스크랩) 허용 여부 (기본 true). 꺼두면 Notification 을 만들지 않는다 |
 | notifyRecommend | notify_recommend | boolean | 여행 추천 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
 | notifyEvent | notify_event | boolean | 이벤트 알림 허용 여부 (기본 false, 발송 트리거는 미구현) |
 | createdAt | created_at | LocalDateTime | 가입일시 |
@@ -247,7 +247,7 @@
 |---|---|---|---|
 | id | id | UUID (PK) | 고유 식별자 |
 | user | user_id | UUID (FK) | 받는 사람 (탈퇴 시 함께 삭제) |
-| type | type | NotificationType | FEEDBACK |
+| type | type | NotificationType | FEEDBACK(참견) / SCRAP(스크랩, feedback 관련 컬럼은 null) |
 | actorId | actor_id | UUID | 행위자(참견 작성자) ID 스냅샷 |
 | actorName | actor_name | String | 행위자 이름 스냅샷 |
 | tripId | trip_id | UUID | 대상 계획 ID (계획 삭제 시 알림도 삭제) |

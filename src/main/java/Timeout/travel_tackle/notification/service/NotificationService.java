@@ -9,6 +9,7 @@ import Timeout.travel_tackle.notification.dto.FeedbackNotificationCommand;
 import Timeout.travel_tackle.notification.dto.NotificationPageResponse;
 import Timeout.travel_tackle.notification.dto.NotificationPushEvent;
 import Timeout.travel_tackle.notification.dto.NotificationResponse;
+import Timeout.travel_tackle.notification.dto.ScrapNotificationCommand;
 import Timeout.travel_tackle.notification.dto.UnreadCountResponse;
 import Timeout.travel_tackle.notification.repository.NotificationRepository;
 import Timeout.travel_tackle.notification.sse.NotificationSseRegistry;
@@ -41,21 +42,42 @@ public class NotificationService {
      */
     @Transactional
     public void notifyFeedback(FeedbackNotificationCommand command) {
-        if (command.receiverId().equals(command.actorId())) {
+        User receiver = receiverAcceptingActivityNotifications(command.receiverId(), command.actorId());
+        if (receiver == null) {
             return;
         }
-        User receiver = userRepository.findById(command.receiverId()).orElse(null);
-        if (receiver == null || !receiver.isNotifyFeedback()) {
-            return;
-        }
-        // flush 해야 @CreationTimestamp 가 채워진 채로 푸시 페이로드를 만들 수 있다
-        Notification saved = notificationRepository.saveAndFlush(Notification.feedback(
+        saveAndPush(Notification.feedback(
                 receiver, command.actorId(), command.actorName(),
                 command.tripId(), command.tripTitle(), command.thumbnailUrl(),
                 command.feedbackId(), command.target(), command.dayNumber(), command.itemTitle(),
                 preview(command.content())));
+    }
+
+    /** 스크랩 알림. 별도 설정 없이 참견 알림 설정(notifyFeedback)을 함께 따른다. */
+    @Transactional
+    public void notifyScrap(ScrapNotificationCommand command) {
+        User receiver = receiverAcceptingActivityNotifications(command.receiverId(), command.actorId());
+        if (receiver == null) {
+            return;
+        }
+        saveAndPush(Notification.scrap(receiver, command.actorId(), command.actorName(),
+                command.tripId(), command.tripTitle(), command.thumbnailUrl()));
+    }
+
+    // 받는 사람이 없거나, 본인 행동이거나, 활동 알림(참견·스크랩)을 꺼뒀으면 null
+    private User receiverAcceptingActivityNotifications(UUID receiverId, UUID actorId) {
+        if (receiverId.equals(actorId)) {
+            return null;
+        }
+        User receiver = userRepository.findById(receiverId).orElse(null);
+        return receiver == null || !receiver.isNotifyFeedback() ? null : receiver;
+    }
+
+    private void saveAndPush(Notification notification) {
+        // flush 해야 @CreationTimestamp 가 채워진 채로 푸시 페이로드를 만들 수 있다
+        Notification saved = notificationRepository.saveAndFlush(notification);
         NotificationResponse response = NotificationResponse.from(saved);
-        UUID receiverId = receiver.getId();
+        UUID receiverId = saved.getUser().getId();
         afterCommit(() -> sseRegistry.send(receiverId, EVENT_NOTIFICATION,
                 new NotificationPushEvent(response, notificationRepository.countByUserIdAndReadFalse(receiverId))));
     }

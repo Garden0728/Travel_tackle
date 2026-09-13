@@ -96,6 +96,19 @@ public class Notification {
         return n;
     }
 
+    public static Notification scrap(User user, UUID actorId, String actorName,
+                                     UUID tripId, String tripTitle, String thumbnailUrl) {
+        Notification n = new Notification();
+        n.user = user;
+        n.type = NotificationType.SCRAP;
+        n.actorId = actorId;
+        n.actorName = actorName;
+        n.tripId = tripId;
+        n.tripTitle = tripTitle;
+        n.thumbnailUrl = thumbnailUrl;
+        return n;
+    }
+
     public void markRead() {
         this.read = true;
     }

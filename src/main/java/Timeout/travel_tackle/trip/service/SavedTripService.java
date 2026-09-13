@@ -21,6 +21,8 @@ import Timeout.travel_tackle.trip.repository.TripPhotoRepository;
 import Timeout.travel_tackle.trip.repository.TripQueryRepository;
 import Timeout.travel_tackle.trip.repository.TripRecordRepository;
 import Timeout.travel_tackle.trip.repository.TripRepository;
+import Timeout.travel_tackle.notification.dto.ScrapNotificationCommand;
+import Timeout.travel_tackle.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ public class SavedTripService {
     private final TripFeedbackRepository tripFeedbackRepository;
     private final TripRecordRepository tripRecordRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      * 다른 사용자의 공개 여행을 스크랩(찜)한다. 이 시점엔 원본을 복사하지 않는다 —
@@ -67,7 +70,15 @@ public class SavedTripService {
         }
 
         SavedTrip savedTrip = savedTripRepository.save(new SavedTrip(user, original, sourceType));
+        notificationService.notifyScrap(new ScrapNotificationCommand(
+                original.getUser().getId(), user.getId(), user.getName(),
+                original.getId(), original.getTitle(), firstThumbnailOf(original)));
         return toResponse(savedTrip);
+    }
+
+    private String firstThumbnailOf(Trip trip) {
+        return tripPhotoRepository.findThumbnailRowsByTripIds(List.of(trip.getId())).stream()
+                .findFirst().map(row -> (String) row[1]).orElse(null);
     }
 
     /**
