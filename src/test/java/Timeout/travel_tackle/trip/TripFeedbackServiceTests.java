@@ -256,6 +256,58 @@ class TripFeedbackServiceTests {
     }
 
     @Test
+    void dismissingNotificationsHidesTripFromReceivedSummaryAndMarksRead() {
+        feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("피드백1", null, null, List.of()));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        feedbackService.dismissNotifications(owner.getId(), tripId);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ReceivedFeedbackSummary> summary = feedbackService.getReceivedSummary(owner.getId());
+        assertTrue(summary.isEmpty());
+    }
+
+    @Test
+    void newFeedbackAfterDismissMakesTripReappearInReceivedSummary() {
+        feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("피드백1", null, null, List.of()));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        feedbackService.dismissNotifications(owner.getId(), tripId);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("지운 뒤 새 피드백", null, null, List.of()));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ReceivedFeedbackSummary> summary = feedbackService.getReceivedSummary(owner.getId());
+        assertEquals(1, summary.size());
+        assertEquals(2, summary.getFirst().totalFeedbackCount());
+        assertEquals(1, summary.getFirst().unreadCount());
+    }
+
+    @Test
+    void nonOwnerCannotDismissNotifications() {
+        feedbackService.create(reviewer.getId(), tripId,
+                new CreateFeedbackRequest("피드백1", null, null, List.of()));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> feedbackService.dismissNotifications(reviewer.getId(), tripId));
+        assertEquals(ErrorCode.TRIP_ACCESS_DENIED, ex.getErrorCode());
+    }
+
+    @Test
     void feedbackListIsFilteredByTargetType() {
         feedbackService.create(reviewer.getId(), tripId,
                 new CreateFeedbackRequest("전체 피드백", null, null, List.of()));

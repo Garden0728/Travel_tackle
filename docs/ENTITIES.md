@@ -130,6 +130,7 @@
 | endDate | end_date | LocalDate | 여행 종료일 |
 | published | is_published | boolean | 공개 여부 |
 | createdAt | created_at | LocalDateTime | 생성 일시 |
+| feedbackNotificationDismissedAt | feedback_notification_dismissed_at | LocalDateTime (nullable) | 참견 알림함 지운 시각 — 이후 새 참견 없으면 모아보기에서 숨김 |
 
 > Lombok `@Getter`와의 충돌 방지를 위해 Java 필드명은 `published`, 컬럼명은 `is_published`로 분리.
 

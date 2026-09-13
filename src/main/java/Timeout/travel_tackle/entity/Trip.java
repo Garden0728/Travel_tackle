@@ -47,6 +47,9 @@ public class Trip {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; //계획 생성 날짜
 
+    @Column(name = "feedback_notification_dismissed_at")
+    private LocalDateTime feedbackNotificationDismissedAt; //참견 알림함 지운 시각 — 이 시각 이후 새 참견이 없으면 모아보기에서 숨김
+
     public Trip(User user, String title, LocalDate startDate, LocalDate endDate) {
         if (endDate.isBefore(startDate)) {
             throw new CustomException(ErrorCode.INVALID_TRIP_DATE_RANGE);
@@ -76,5 +79,9 @@ public class Trip {
 
     public void complete() {
         this.status = TripStatus.COMPLETED;
+    }
+
+    public void dismissFeedbackNotifications() {
+        this.feedbackNotificationDismissedAt = LocalDateTime.now();
     }
 }

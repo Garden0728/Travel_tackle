@@ -71,7 +71,10 @@ public class TripService {
     @Transactional(readOnly = true)
     public TripDetailResponse getTripDetail(UUID userId, UUID tripId) {
         Trip trip = findTripOwnedBy(userId, tripId);
-        return tripQueryRepository.findDetail(trip);
+        TripDetailResponse detail = tripQueryRepository.findDetail(trip);
+        long saveCount = savedTripRepository.countGroupByOriginalTripIds(List.of(tripId)).stream()
+                .findFirst().map(row -> (Long) row[1]).orElse(0L);
+        return detail.withSaveCount(saveCount);
     }
 
     @Transactional

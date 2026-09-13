@@ -79,7 +79,7 @@ class SavedTripServiceTests {
         assertNotEquals(originalId, copy.id());
         // 복사본은 viewer 소유이므로 viewer가 상세 조회 가능
         TripDetailResponse copied = tripService.getTripDetail(viewer.getId(), copy.id());
-        assertEquals("원본 여행", copied.title());
+        assertEquals("원본 여행 (주인님의 계획)", copied.title());
         assertEquals(1, copied.days().size());
         assertEquals(
                 List.of("A", "B"),

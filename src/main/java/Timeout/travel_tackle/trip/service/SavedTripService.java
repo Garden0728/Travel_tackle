@@ -90,7 +90,8 @@ public class SavedTripService {
         // 정책 확정 시 여기서 user.creditBalance 검증·차감(또는 freeTrialsUsed) +
         // CreditTransaction 기록을 수행한다. 현재는 과금 없이 복사만 동작.
 
-        Trip copy = new Trip(user, original.getTitle(), original.getStartDate(), original.getEndDate());
+        String copiedTitle = original.getTitle() + " (" + original.getUser().getName() + "님의 계획)";
+        Trip copy = new Trip(user, copiedTitle, original.getStartDate(), original.getEndDate());
         tripRepository.saveAndFlush(copy);
         copyDaysAndItems(original, copy);
 

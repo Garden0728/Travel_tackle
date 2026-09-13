@@ -110,8 +110,9 @@ public class FeedService {
         long feedbackCount = tripFeedbackRepository.countGroupByTripIds(List.of(tripId))
                 .stream().findFirst().map(row -> (Long) row[1]).orElse(0L);
         UUID savedTripId = resolveSavedTripIdsByOriginal(userId, List.of(tripId)).get(tripId);
+        long saveCount = resolveSaveCounts(List.of(tripId)).getOrDefault(tripId, 0L);
 
-        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount, savedTripId);
+        return PublicTripDetailResponse.of(trip, resolveRegion(detail), detail.days(), record, feedbackCount, savedTripId, saveCount);
     }
 
     private List<FeedItemResponse> buildFeedItems(

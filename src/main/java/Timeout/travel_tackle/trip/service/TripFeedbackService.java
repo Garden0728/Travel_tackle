@@ -184,15 +184,38 @@ public class TripFeedbackService {
         for (Trip trip : myTrips) {
             long total = totalMap.getOrDefault(trip.getId(), 0L);
             if (total == 0) continue;
+
+            LocalDateTime latestFeedbackAt = latestMap.get(trip.getId());
+            LocalDateTime dismissedAt = trip.getFeedbackNotificationDismissedAt();
+            // 지운 뒤로 새 참견이 안 달렸으면 모아보기에서 계속 숨긴다 — 새 참견이 달리면 자동으로 다시 노출
+            if (dismissedAt != null && (latestFeedbackAt == null || !latestFeedbackAt.isAfter(dismissedAt))) {
+                continue;
+            }
+
             result.add(new ReceivedFeedbackSummary(
                     trip.getId(),
                     trip.getTitle(),
                     total,
                     unreadMap.getOrDefault(trip.getId(), 0L),
-                    latestMap.get(trip.getId())
+                    latestFeedbackAt
             ));
         }
         return result;
+    }
+
+    /**
+     * 참견 알림함에서 "지우기" — 실제 삭제는 아니고, 지운 시각을 저장해 모아보기 목록에서
+     * 숨긴다. 기존 markAllReadByTripId를 재사용해 읽음 처리도 함께 한다(계획 상세 진입 시와 동일 효과).
+     * 지운 이후 새 참견이 달리면 getReceivedSummary가 자동으로 다시 노출한다.
+     */
+    @Transactional
+    public void dismissNotifications(UUID userId, UUID tripId) {
+        Trip trip = findTrip(tripId);
+        if (!trip.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.TRIP_ACCESS_DENIED);
+        }
+        feedbackRepository.markAllReadByTripId(tripId);
+        trip.dismissFeedbackNotifications();
     }
 
     // --- 내부 헬퍼 ---
