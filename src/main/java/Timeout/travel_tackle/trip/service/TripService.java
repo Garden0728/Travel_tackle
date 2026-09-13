@@ -12,6 +12,7 @@ import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.global.exception.CustomException;
 import Timeout.travel_tackle.global.exception.ErrorCode;
 import Timeout.travel_tackle.image.service.ImageStorageService;
+import Timeout.travel_tackle.notification.repository.NotificationRepository;
 import Timeout.travel_tackle.trip.dto.*;
 import Timeout.travel_tackle.trip.repository.SavedTripRepository;
 import Timeout.travel_tackle.trip.repository.TripDayRepository;
@@ -45,6 +46,7 @@ public class TripService {
     private final TripQueryRepository tripQueryRepository;
     private final TripPhotoRepository tripPhotoRepository;
     private final ImageStorageService imageStorageService;
+    private final NotificationRepository notificationRepository;
     private final TripRecordRepository tripRecordRepository;
     private final SavedTripRepository savedTripRepository;
     private final UserRepository userRepository;
@@ -118,6 +120,7 @@ public class TripService {
         savedTripRepository.clearCopiedTripReference(trip);
         // bulkDeleteByTrip 내부에서 피드백 추천→피드백→아이템→일차 순으로 삭제
         deleteAllDaysAndItems(trip);
+        notificationRepository.deleteAllByTripId(trip.getId()); // FK 는 없지만 사라진 계획의 알림은 의미가 없다
         tripRepository.delete(trip);
     }
 
