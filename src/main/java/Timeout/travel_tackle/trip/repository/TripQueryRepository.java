@@ -29,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +43,10 @@ public class TripQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     /**
-     * 기간(createdAt 기준, 경계 null 이면 무제한) 안에 만들어진 공개 계획마다 첫 번째 일정의 주소를 돌려준다.
-     * 피드의 region 과 같은 기준(첫 일차의 첫 일정)이며, 일정이 하나도 없는 계획은 빠진다.
+     * 기간(createdAt 기준, 경계 null 이면 무제한) 안에 만들어진 공개 계획마다 모든 일정의 주소를 돌려준다.
+     * 일정이 하나도 없는 계획은 빠지고, 주소가 없는 일정은 null 로 들어간다.
      */
-    public Map<UUID, String> findFirstItemAddressOfPublishedTrips(LocalDateTime from, LocalDateTime to) {
+    public Map<UUID, List<String>> findItemAddressesOfPublishedTrips(LocalDateTime from, LocalDateTime to) {
         QTrip qTrip = QTrip.trip;
         QTripDay qDay = QTripDay.tripDay;
         QTripItem qItem = QTripItem.tripItem;
@@ -64,17 +65,13 @@ public class TripQueryRepository {
                 .join(qItem.tripDay, qDay)
                 .join(qDay.trip, qTrip)
                 .where(where)
-                .orderBy(qTrip.id.asc(), qDay.dayNumber.asc(), qItem.orderIndex.asc())
                 .fetch();
 
-        Map<UUID, String> firstAddressByTrip = new LinkedHashMap<>();
+        Map<UUID, List<String>> addressesByTrip = new LinkedHashMap<>();
         for (Tuple row : rows) {
-            // putIfAbsent 는 null 값을 '없음'으로 봐서 뒤 일정 주소로 덮이므로, 첫 일정이 주소가 없어도 그대로 둔다
-            if (!firstAddressByTrip.containsKey(row.get(qTrip.id))) {
-                firstAddressByTrip.put(row.get(qTrip.id), row.get(qItem.address));
-            }
+            addressesByTrip.computeIfAbsent(row.get(qTrip.id), id -> new ArrayList<>()).add(row.get(qItem.address));
         }
-        return firstAddressByTrip;
+        return addressesByTrip;
     }
 
     /**

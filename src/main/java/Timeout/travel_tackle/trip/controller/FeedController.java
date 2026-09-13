@@ -70,7 +70,7 @@ public class FeedController {
     }
 
     @GetMapping("/regions")
-    @Operation(summary = "기간 내 인기 지역 집계 (공개 계획의 첫 일정 지역별 계획 수, from/to=YYYY-MM-DD, 생성일 기준)")
+    @Operation(summary = "기간 내 인기 지역 집계 (공개 계획에 포함된 지역별 계획 수, 계획당 지역 1회, from/to=YYYY-MM-DD, 생성일 기준)")
     public ResponseEntity<List<RegionCountResponse>> getRegionCounts(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,

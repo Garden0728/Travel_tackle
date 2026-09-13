@@ -92,7 +92,8 @@ public class FeedService {
     }
 
     /**
-     * 기간 내 공개 계획을 첫 일정 지역별로 센다. 계획 수 내림차순, 동점은 지역명 오름차순, 상위 size 개.
+     * 기간 내 공개 계획에 등장하는 지역을 센다. 한 계획에 같은 지역 일정이 여러 개여도 그 지역은 1번만 세고,
+     * 용인·수원처럼 여러 지역이 섞이면 각 지역에 1씩 더한다. 계획 수 내림차순, 동점은 지역명 오름차순, 상위 size 개.
      * 기간은 계획 생성일(createdAt) 기준이며 from/to 는 날짜 단위로 양끝 포함, null 이면 무제한.
      */
     @Transactional(readOnly = true)
@@ -104,10 +105,13 @@ public class FeedService {
         LocalDateTime toAt = to == null ? null : to.plusDays(1).atStartOfDay().minusNanos(1);
 
         Map<String, Long> counts = new HashMap<>();
-        tripQueryRepository.findFirstItemAddressOfPublishedTrips(fromAt, toAt).values().stream()
-                .map(RegionLabelResolver::fromAddress)
-                .filter(region -> region != null && !region.isBlank())
-                .forEach(region -> counts.merge(region, 1L, Long::sum));
+        for (List<String> addresses : tripQueryRepository.findItemAddressesOfPublishedTrips(fromAt, toAt).values()) {
+            addresses.stream()
+                    .map(RegionLabelResolver::fromAddress)
+                    .filter(region -> region != null && !region.isBlank())
+                    .distinct()
+                    .forEach(region -> counts.merge(region, 1L, Long::sum));
+        }
 
         return counts.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed()
