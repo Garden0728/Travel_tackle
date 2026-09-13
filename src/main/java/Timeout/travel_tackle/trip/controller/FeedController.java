@@ -3,6 +3,7 @@ package Timeout.travel_tackle.trip.controller;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
 import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.PublicTripDetailResponse;
+import Timeout.travel_tackle.trip.dto.RegionCountResponse;
 import Timeout.travel_tackle.trip.service.FeedService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -63,6 +67,17 @@ public class FeedController {
 
         UUID userId = jwt != null ? UUID.fromString(jwt.getSubject()) : null;
         return ResponseEntity.ok(feedService.getFeed(pageable, feedSort, keyword, userId));
+    }
+
+    @GetMapping("/regions")
+    @Operation(summary = "기간 내 인기 지역 집계 (공개 계획의 첫 일정 지역별 계획 수, from/to=YYYY-MM-DD, 생성일 기준)")
+    public ResponseEntity<List<RegionCountResponse>> getRegionCounts(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        return ResponseEntity.ok(feedService.getRegionCounts(from, to, safeSize));
     }
 
     @GetMapping("/{tripId}")

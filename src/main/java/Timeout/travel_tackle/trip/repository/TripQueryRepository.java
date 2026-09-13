@@ -14,6 +14,8 @@ import Timeout.travel_tackle.trip.dto.FeedSort;
 import Timeout.travel_tackle.trip.dto.TripDayResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripItemResponse;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
@@ -26,6 +28,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +40,42 @@ import java.util.stream.Collectors;
 public class TripQueryRepository {
 
     private final JPAQueryFactory queryFactory;
+
+    /**
+     * 기간(createdAt 기준, 경계 null 이면 무제한) 안에 만들어진 공개 계획마다 첫 번째 일정의 주소를 돌려준다.
+     * 피드의 region 과 같은 기준(첫 일차의 첫 일정)이며, 일정이 하나도 없는 계획은 빠진다.
+     */
+    public Map<UUID, String> findFirstItemAddressOfPublishedTrips(LocalDateTime from, LocalDateTime to) {
+        QTrip qTrip = QTrip.trip;
+        QTripDay qDay = QTripDay.tripDay;
+        QTripItem qItem = QTripItem.tripItem;
+
+        BooleanBuilder where = new BooleanBuilder(qTrip.published.isTrue());
+        if (from != null) {
+            where.and(qTrip.createdAt.goe(from));
+        }
+        if (to != null) {
+            where.and(qTrip.createdAt.loe(to));
+        }
+
+        List<Tuple> rows = queryFactory
+                .select(qTrip.id, qItem.address)
+                .from(qItem)
+                .join(qItem.tripDay, qDay)
+                .join(qDay.trip, qTrip)
+                .where(where)
+                .orderBy(qTrip.id.asc(), qDay.dayNumber.asc(), qItem.orderIndex.asc())
+                .fetch();
+
+        Map<UUID, String> firstAddressByTrip = new LinkedHashMap<>();
+        for (Tuple row : rows) {
+            // putIfAbsent 는 null 값을 '없음'으로 봐서 뒤 일정 주소로 덮이므로, 첫 일정이 주소가 없어도 그대로 둔다
+            if (!firstAddressByTrip.containsKey(row.get(qTrip.id))) {
+                firstAddressByTrip.put(row.get(qTrip.id), row.get(qItem.address));
+            }
+        }
+        return firstAddressByTrip;
+    }
 
     /**
      * 여행 상세 조회 — N+1 없이 쿼리 2번으로 전체 일정 로딩

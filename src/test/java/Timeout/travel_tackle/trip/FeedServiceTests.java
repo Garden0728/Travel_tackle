@@ -12,6 +12,7 @@ import Timeout.travel_tackle.trip.dto.CreateTripRequest;
 import Timeout.travel_tackle.entity.Enum.FeedItemType;
 import Timeout.travel_tackle.trip.dto.FeedItemResponse;
 import Timeout.travel_tackle.trip.dto.FeedSort;
+import Timeout.travel_tackle.trip.dto.RegionCountResponse;
 import Timeout.travel_tackle.trip.dto.TripDetailResponse;
 import Timeout.travel_tackle.trip.dto.TripRecordRequest;
 import Timeout.travel_tackle.trip.service.FeedService;
@@ -36,6 +37,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
@@ -96,6 +98,50 @@ class FeedServiceTests {
         assertEquals("계획자", item.ownerName());
 
         assertEquals(owner.getId(), feedService.getPublicTripDetail(tripId, null).ownerId());
+    }
+
+    @Test
+    void regionCountsGroupPublishedTripsByFirstItemRegionWithinPeriod() {
+        LocalDateTime june = LocalDateTime.of(2026, 6, 15, 12, 0);
+        LocalDateTime july = LocalDateTime.of(2026, 7, 10, 12, 0);
+        createPublishedTripInRegion("서울1", "서울특별시 종로구 사직로 161", july);
+        createPublishedTripInRegion("서울2", "서울특별시 용산구 남산공원길 105", july);
+        createPublishedTripInRegion("제주", "제주특별자치도 제주시 우도면 우도해안길 32", july);
+        createPublishedTripInRegion("수원", "경기도 수원시 팔달구 정조로 825", july);
+        createPublishedTripInRegion("지난달 제주", "제주특별자치도 제주시 애월읍 애월북서길 56", june);
+        UUID unpublished = createPublishedTripInRegion("비공개 서울", "서울특별시 마포구 양화로 45", july);
+        tripService.unpublishTrip(owner.getId(), unpublished);
+        // 첫 일정에 주소가 없으면 뒤 일정 주소로 대신 세지 않는다 (피드 region 과 같은 기준)
+        UUID noAddressFirst = createPublishedTripInRegion("주소 없는 첫 일정", null, july);
+        UUID day = tripService.getTripDetail(owner.getId(), noAddressFirst).days().getFirst().id();
+        CartItem second = cartItemRepository.save(new CartItem(owner, "item-2nd", "둘째", null, "1", null, null, null, null));
+        UUID secondItemId = tripService.addTripItem(owner.getId(), noAddressFirst, day,
+                new AddTripItemRequest(second.getId(), null, null)).id();
+        entityManager.flush();
+        entityManager.createNativeQuery("update trip_items set address = ? where id = ?")
+                .setParameter(1, "서울특별시 강남구 테헤란로 1").setParameter(2, secondItemId).executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        List<RegionCountResponse> thisMonth = feedService.getRegionCounts(
+                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31), 10);
+        assertEquals(List.of("서울", "수원", "제주"),
+                thisMonth.stream().map(RegionCountResponse::region).toList()); // 동점(1)은 지역명 오름차순
+        assertEquals(List.of(2L, 1L, 1L),
+                thisMonth.stream().map(RegionCountResponse::tripCount).toList());
+
+        List<RegionCountResponse> all = feedService.getRegionCounts(null, null, 10);
+        assertEquals(2L, all.stream().filter(r -> r.region().equals("제주")).findFirst().orElseThrow().tripCount());
+
+        assertEquals(1, feedService.getRegionCounts(null, null, 1).size());
+        assertTrue(feedService.getRegionCounts(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31), 10).isEmpty());
+    }
+
+    @Test
+    void regionCountsRejectReversedPeriod() {
+        CustomException ex = assertThrows(CustomException.class, () ->
+                feedService.getRegionCounts(LocalDate.of(2026, 7, 31), LocalDate.of(2026, 7, 1), 10));
+        assertEquals(ErrorCode.INVALID_INPUT, ex.getErrorCode());
     }
 
     @Test
@@ -256,6 +302,25 @@ class FeedServiceTests {
                 new AddTripItemRequest(cartItem.getId(), null, null));
         tripService.publishTrip(owner.getId(), tripId);
         entityManager.flush();
+        return tripId;
+    }
+
+
+    // 첫 일정 주소와 생성 시각을 지정한 공개 계획. 주소는 TourAPI 없이 직접 채운다
+    private UUID createPublishedTripInRegion(String title, String address, LocalDateTime createdAt) {
+        LocalDate date = LocalDate.of(2026, 7, 1);
+        UUID tripId = tripService.createTrip(owner.getId(), new CreateTripRequest(title, date, date)).id();
+        UUID dayId = tripService.getTripDetail(owner.getId(), tripId).days().getFirst().id();
+        CartItem cartItem = cartItemRepository.save(
+                new CartItem(owner, "item-" + title, title, null, "1", null, null, null, null));
+        UUID itemId = tripService.addTripItem(owner.getId(), tripId, dayId,
+                new AddTripItemRequest(cartItem.getId(), null, null)).id();
+        tripService.publishTrip(owner.getId(), tripId);
+        entityManager.flush();
+        entityManager.createNativeQuery("update trip_items set address = ? where id = ?")
+                .setParameter(1, address).setParameter(2, itemId).executeUpdate();
+        entityManager.createNativeQuery("update trips set created_at = ? where id = ?")
+                .setParameter(1, createdAt).setParameter(2, tripId).executeUpdate();
         return tripId;
     }
 
