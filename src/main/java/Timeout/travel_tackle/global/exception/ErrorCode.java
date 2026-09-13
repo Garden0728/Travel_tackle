@@ -79,6 +79,9 @@ public enum ErrorCode {
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "IMAGE_003", "이미지는 파일당 10MB, 요청 전체 50MB 이하여야 합니다."),
     IMAGE_UPLOAD_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "IMAGE_004", "이미지 저장소에 업로드하지 못했습니다. 저장소 설정(버킷·리전·자격 증명)을 확인해 주세요."),
 
+    //알림에 관련 예외
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTI_001", "알림을 찾을 수 없습니다."),
+
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_002", "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");
 

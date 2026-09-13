@@ -19,7 +19,7 @@
 | freeTrialsUsed | free_trials_used | int | 무료 체험 사용 횟수 |
 | preferredLanguage | preferred_language | String | 선호 언어 코드 (기본값 "ko", 기기 간 동기화용) |
 | notifyEmail | notify_email | boolean | 이메일 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
-| notifyFeedback | notify_feedback | boolean | 피드백(참견) 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
+| notifyFeedback | notify_feedback | boolean | 활동 알림(참견·스크랩) 허용 여부 (기본 true). 꺼두면 Notification 을 만들지 않는다 |
 | notifyRecommend | notify_recommend | boolean | 여행 추천 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
 | notifyEvent | notify_event | boolean | 이벤트 알림 허용 여부 (기본 false, 발송 트리거는 미구현) |
 | createdAt | created_at | LocalDateTime | 가입일시 |
@@ -238,3 +238,25 @@
 | read | is_read | boolean | 여행 소유자의 열람 여부 |
 | createdAt | created_at | LocalDateTime | 작성일시 |
 | updatedAt | updated_at | LocalDateTime | 수정일시 |
+
+## Notification
+
+사용자 알림. 참견 등 다른 사용자의 행동을 **받는 사람 기준**으로 저장한다. 행위자·계획·참견 정보는 FK 없이 스냅샷으로 두어 원본이 수정·삭제돼도 알림은 남는다. 실시간 전달은 `GET /api/notifications/stream`(SSE)로 하고, 접속 중이 아니면 저장된 알림을 나중에 조회한다.
+
+| 필드 (Java) | 컬럼 (DB) | 타입 | 설명 |
+|---|---|---|---|
+| id | id | UUID (PK) | 고유 식별자 |
+| user | user_id | UUID (FK) | 받는 사람 (탈퇴 시 함께 삭제) |
+| type | type | NotificationType | FEEDBACK(참견) / SCRAP(스크랩, feedback 관련 컬럼은 null) |
+| actorId | actor_id | UUID | 행위자(참견 작성자) ID 스냅샷 |
+| actorName | actor_name | String | 행위자 이름 스냅샷 |
+| tripId | trip_id | UUID | 대상 계획 ID (계획 삭제 시 알림도 삭제) |
+| tripTitle | trip_title | String | 계획 제목 스냅샷 |
+| thumbnailUrl | thumbnail_url | String(1000) | 계획 썸네일 스냅샷 (기록 첫 사진, 없으면 null) |
+| feedbackId | feedback_id | UUID | 참견 ID |
+| target | target | NotificationTarget | TRIP / DAY / ITEM |
+| dayNumber | day_number | Integer | DAY·ITEM 참견의 일차 |
+| itemTitle | item_title | String | ITEM 참견의 장소명 |
+| preview | preview | String(200) | 참견 내용 앞 60자 |
+| read | is_read | boolean (default false) | 읽음 여부 |
+| createdAt | created_at | LocalDateTime | 생성일시 |
