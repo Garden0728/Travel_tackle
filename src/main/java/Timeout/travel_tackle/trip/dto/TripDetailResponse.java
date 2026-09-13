@@ -16,7 +16,8 @@ public record TripDetailResponse(
         TripStatus status,
         boolean published,
         LocalDateTime createdAt,
-        List<TripDayResponse> days
+        List<TripDayResponse> days,
+        long saveCount
 ) {
     public static TripDetailResponse of(Trip trip, List<TripDayResponse> days) {
         return new TripDetailResponse(
@@ -27,7 +28,12 @@ public record TripDetailResponse(
                 trip.getStatus(),
                 trip.isPublished(),
                 trip.getCreatedAt(),
-                days
+                days,
+                0L
         );
+    }
+
+    public TripDetailResponse withSaveCount(long saveCount) {
+        return new TripDetailResponse(id, title, startDate, endDate, status, published, createdAt, days, saveCount);
     }
 }

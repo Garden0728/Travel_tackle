@@ -21,7 +21,8 @@ public record PublicTripDetailResponse(
         List<TripDayResponse> days,
         TripRecordResponse record,
         long feedbackCount,
-        UUID savedTripId
+        UUID savedTripId,
+        long saveCount
 ) {
     public static PublicTripDetailResponse of(
             Trip trip,
@@ -29,7 +30,8 @@ public record PublicTripDetailResponse(
             List<TripDayResponse> days,
             TripRecordResponse record,
             long feedbackCount,
-            UUID savedTripId
+            UUID savedTripId,
+            long saveCount
     ) {
         return new PublicTripDetailResponse(
                 trip.getId(),
@@ -44,7 +46,8 @@ public record PublicTripDetailResponse(
                 days,
                 record,
                 feedbackCount,
-                savedTripId
+                savedTripId,
+                saveCount
         );
     }
 }
