@@ -120,6 +120,17 @@ public class TripFeedbackController {
                 .body(feedbackService.addRecommendationToCart(userId, tripId, recommendationId));
     }
 
+    @PostMapping("/api/trips/{tripId}/feedback/notifications/dismiss")
+    @Operation(summary = "참견 알림함 지우기 (읽음 처리 + 지운 시각 저장, 새 참견 달리면 다시 노출)")
+    public ResponseEntity<Void> dismissNotifications(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID tripId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        feedbackService.dismissNotifications(userId, tripId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/api/trips/feedback/received")
     @Operation(summary = "내 여행 계획에 달린 피드백 모아보기 (미읽음 수 포함)")
     public ResponseEntity<List<ReceivedFeedbackSummary>> getReceived(
