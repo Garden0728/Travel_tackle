@@ -15,6 +15,7 @@ import Timeout.travel_tackle.notification.repository.NotificationRepository;
 import Timeout.travel_tackle.notification.sse.NotificationSseRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,10 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.Objects;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -76,7 +81,9 @@ public class NotificationService {
     private void saveAndPush(Notification notification) {
         // flush 해야 @CreationTimestamp 가 채워진 채로 푸시 페이로드를 만들 수 있다
         Notification saved = notificationRepository.saveAndFlush(notification);
-        NotificationResponse response = NotificationResponse.from(saved);
+        String actorImage = saved.getActorId() == null ? null
+                : userRepository.findById(saved.getActorId()).map(User::getProfileImageUrl).orElse(null);
+        NotificationResponse response = NotificationResponse.from(saved, actorImage);
         UUID receiverId = saved.getUser().getId();
         afterCommit(() -> sseRegistry.send(receiverId, EVENT_NOTIFICATION,
                 new NotificationPushEvent(response, notificationRepository.countByUserIdAndReadFalse(receiverId))));
@@ -84,9 +91,16 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public NotificationPageResponse getNotifications(UUID userId, Pageable pageable) {
+        Page<Notification> page = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+        // 행위자 프로필 사진은 현재 값을 보여주므로 페이지 단위로 한 번에 조회한다
+        Set<UUID> actorIds = page.getContent().stream().map(Notification::getActorId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<UUID, String> actorImages = actorIds.isEmpty() ? Map.of()
+                : userRepository.findAllById(actorIds).stream()
+                        .filter(u -> u.getProfileImageUrl() != null)
+                        .collect(Collectors.toMap(User::getId, User::getProfileImageUrl));
         return NotificationPageResponse.of(
                 notificationRepository.countByUserIdAndReadFalse(userId),
-                notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable).map(NotificationResponse::from));
+                page.map(n -> NotificationResponse.from(n, actorImages.get(n.getActorId()))));
     }
 
     @Transactional(readOnly = true)

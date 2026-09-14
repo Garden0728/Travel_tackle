@@ -150,6 +150,21 @@ class NotificationServiceTests {
     }
 
     @Test
+    void actorProfileImageReflectsCurrentProfile() {
+        reviewer.changeProfileImage("https://cdn.test/profiles/r/1.jpg");
+        entityManager.flush();
+        feedbackService.create(reviewer.getId(), tripId, new CreateFeedbackRequest("사진 확인", null, null, List.of()));
+
+        NotificationResponse n = notificationService.getNotifications(owner.getId(), PageRequest.of(0, 10)).content().getFirst();
+        assertEquals("https://cdn.test/profiles/r/1.jpg", n.actor().profileImageUrl());
+
+        reviewer.changeProfileImage("https://cdn.test/profiles/r/2.jpg");
+        entityManager.flush();
+        assertEquals("https://cdn.test/profiles/r/2.jpg",
+                notificationService.getNotifications(owner.getId(), PageRequest.of(0, 10)).content().getFirst().actor().profileImageUrl());
+    }
+
+    @Test
     void longContentIsTruncatedToPreview() {
         String longContent = "가".repeat(120);
         feedbackService.create(reviewer.getId(), tripId, new CreateFeedbackRequest(longContent, null, null, List.of()));
