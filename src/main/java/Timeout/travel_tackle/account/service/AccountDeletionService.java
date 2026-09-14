@@ -4,6 +4,7 @@ import Timeout.travel_tackle.auth.jwt.AuthCookieService;
 import Timeout.travel_tackle.auth.repository.RefreshTokenRepository;
 import Timeout.travel_tackle.auth.repository.UserAuthProviderRepository;
 import Timeout.travel_tackle.auth.repository.UserRepository;
+import Timeout.travel_tackle.image.service.ImageStorageService;
 import Timeout.travel_tackle.notification.repository.NotificationRepository;
 import Timeout.travel_tackle.cart.repository.CartItemRepository;
 import Timeout.travel_tackle.entity.User;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -44,6 +46,7 @@ public class AccountDeletionService {
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final NotificationRepository notificationRepository;
+    private final ImageStorageService imageStorageService;
     private final AuthCookieService authCookieService;
 
     @Transactional
@@ -68,6 +71,9 @@ public class AccountDeletionService {
         userAuthProviderRepository.deleteAllByUserId(userId);
         refreshTokenRepository.deleteAllByUser(user);
         notificationRepository.deleteAllByUser(user);
+        if (user.getProfileImageUrl() != null) {
+            imageStorageService.deleteAfterCommit(userId, List.of(user.getProfileImageUrl()), ImageStorageService.Kind.PROFILE);
+        }
 
         // user_id를 참조하는 자식 row들의 삭제를 users 삭제보다 먼저 DB에 반영 (FK 제약 순서 보장)
         userRepository.flush();
