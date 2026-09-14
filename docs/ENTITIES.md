@@ -18,6 +18,7 @@
 | creditBalance | credit_balance | int | 보유 크레딧 |
 | freeTrialsUsed | free_trials_used | int | 무료 체험 사용 횟수 |
 | preferredLanguage | preferred_language | String | 선호 언어 코드 (기본값 "ko", 기기 간 동기화용) |
+| profileImageUrl | profile_image_url | String(1000) | S3 프로필 사진 읽기 URL (없으면 null). 교체·삭제·탈퇴 시 이전 객체는 커밋 후 S3 에서 삭제 |
 | notifyEmail | notify_email | boolean | 이메일 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
 | notifyFeedback | notify_feedback | boolean | 활동 알림(참견·스크랩) 허용 여부 (기본 true). 꺼두면 Notification 을 만들지 않는다 |
 | notifyRecommend | notify_recommend | boolean | 여행 추천 알림 허용 여부 (기본 true, 발송 트리거는 미구현) |
